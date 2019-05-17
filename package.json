@@ -1,0 +1,42 @@
+{
+  "name": "ngx-from-swagger-json",
+  "version": "1.0.0",
+  "description": "Generate Angular services from Swagger JSON",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "tslint -p tsconfig.json",
+    "postversion": "git push && git push --tags",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "preversion": "npm run lint",
+    "test": "jest --config jestconfig.json",
+    "version": "npm run format && git add -A src"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SamanthaAdrichem/ngx-from-swagger-json.git"
+  },
+  "keywords": ["Angular", "Swagger"],
+  "author": "Samantha Adrichem",
+  "bugs": {
+    "url": "https://github.com/SamanthaAdrichem/ngx-from-swagger-json/issues"
+  },
+  "homepage": "https://github.com/SamanthaAdrichem/ngx-from-swagger-json#readme",
+  "files": [
+    "lib/**/*"
+  ],
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/jest": "^24.0.13",
+    "jest": "^24.8.0",
+    "prettier": "^1.17.1",
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.16.0",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.4.5"
+  }
+}
