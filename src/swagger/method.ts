@@ -1,4 +1,4 @@
-import {MethodModel} from 'src/models/swagger/method.model';
+import {MethodModel} from 'models/swagger/method.model';
 
 export class Method {
 

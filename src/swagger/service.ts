@@ -1,6 +1,6 @@
-import {LibString}   from 'src/lib/string';
-import {PathModel}   from 'src/models/swagger/path.model';
-import {Method}      from 'src/swagger/method';
+import {LibString}   from 'lib/string';
+import {PathModel}   from 'models/swagger/path.model';
+import {Method}      from 'swagger/method';
 
 export class Service {
 

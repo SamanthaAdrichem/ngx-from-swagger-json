@@ -31,12 +31,16 @@
   "files": [
     "lib/**/*"
   ],
+  "bin": {
+    "ngx-from-swagger-json": "lib/index.js"
+  },
   "license": "ISC",
   "dependencies": {},
   "devDependencies": {
     "@types/jest": "^24.0.13",
     "@types/node": "^12.0.2",
     "jest": "^24.8.0",
+    "pkg": "^4.4.0",
     "prettier": "^1.17.1",
     "ts-jest": "^24.0.2",
     "tslint": "^5.16.0",

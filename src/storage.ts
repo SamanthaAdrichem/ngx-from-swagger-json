@@ -1,6 +1,6 @@
-import {Definition} from 'src/swagger/definition';
-import {Parameter}  from 'src/swagger/parameter';
-import {Service}    from 'src/swagger/service';
+import {Definition} from 'swagger/definition';
+import {Parameter}  from 'swagger/parameter';
+import {Service}    from 'swagger/service';
 
 export class Storage {
 	public static parameters: {[key: string]:Parameter} = {};

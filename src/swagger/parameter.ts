@@ -1,4 +1,4 @@
-import {ParameterModel} from 'src/models/swagger/parameter.model';
+import {ParameterModel} from 'models/swagger/parameter.model';
 
 export class Parameter {
 

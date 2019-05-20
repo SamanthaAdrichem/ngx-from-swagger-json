@@ -1,12 +1,12 @@
 import {get}          from 'https';
 import * as process   from "process";
-import {ConfigModel}  from 'src/config/config.model';
-import {Logger}       from 'src/logger';
-import {SwaggerModel} from 'src/models/swagger.model';
-import {Storage}      from 'src/storage';
-import {Definition}   from 'src/swagger/definition';
-import {Parameter}    from 'src/swagger/parameter';
-import {Service}      from 'src/swagger/service';
+import {ConfigModel}  from 'config/config.model';
+import {Logger}       from 'logger';
+import {SwaggerModel} from 'models/swagger.model';
+import {Storage}      from 'storage';
+import {Definition}   from 'swagger/definition';
+import {Parameter}    from 'swagger/parameter';
+import {Service}      from 'swagger/service';
 
 export class Parser {
 

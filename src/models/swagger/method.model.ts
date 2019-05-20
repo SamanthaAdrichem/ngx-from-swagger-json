@@ -1,5 +1,5 @@
-import {ParameterModel} from 'src/models/swagger/parameter.model';
-import {ResponseModel}  from 'src/models/swagger/response.model';
+import {ParameterModel} from 'models/swagger/parameter.model';
+import {ResponseModel}  from 'models/swagger/response.model';
 
 export class MethodModel {
 	public tags?: string[];

@@ -1,8 +1,8 @@
 import {readFileSync} from 'fs';
 import * as process   from 'process';
-import {ConfigModel}  from 'src/config/config.model';
-import {Logger}       from 'src/logger';
-import {Parser}       from 'src/parser';
+import {ConfigModel}  from 'config/config.model';
+import {Logger}       from 'logger';
+import {Parser}       from 'parser';
 
 const rootPath = './../'; // @todo determin project root
 const verbose = true; // @todo read from arguments
