@@ -1,6 +1,6 @@
-import {LibString}   from 'lib/string';
-import {PathModel}   from 'models/swagger/path.model';
-import {Method}      from 'swagger/method';
+import {LibString}   from '../lib/string';
+import {PathModel}   from '../models/swagger/path.model';
+import {Method}      from './method';
 
 export class Service {
 
@@ -49,6 +49,10 @@ export class Service {
 		this.methods[method.name] = method;
 	}
 
+	public getMethods(): {[key: string]:Method} {
+		return this.methods;
+	}
+
 	public addPathParam(paramName: string): void {
 		this.pathParams.push(this.parseUrlParam(paramName));
 	}
@@ -66,7 +70,18 @@ export class Service {
 	}
 
 	public merge(service: Service) {
-		console.log(service);
+		const methods: {[key: string]:Method} = service.getMethods();
+		for (const method in methods) {
+			if (!methods.hasOwnProperty(method)) {
+				continue;
+			}
+			this.addMethod(methods[method]);
+		}
+	}
+
+	public export(rootExportDestination: string): void {
+		let serviceName
+		console.log(this);
 	}
 
 

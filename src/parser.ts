@@ -1,14 +1,17 @@
 import {get}          from 'https';
+import * as path      from 'path';
 import * as process   from "process";
-import {ConfigModel}  from 'config/config.model';
-import {Logger}       from 'logger';
-import {SwaggerModel} from 'models/swagger.model';
-import {Storage}      from 'storage';
-import {Definition}   from 'swagger/definition';
-import {Parameter}    from 'swagger/parameter';
-import {Service}      from 'swagger/service';
+import {ConfigModel}  from './config/config.model';
+import {Logger}       from './logger';
+import {SwaggerModel} from './models/swagger.model';
+import {Storage}      from './storage';
+import {Definition}   from './swagger/definition';
+import {Parameter}    from './swagger/parameter';
+import {Service}      from './swagger/service';
 
 export class Parser {
+
+	readonly fallbackDestinationDir: string = './__ngx-from-swagger-json/';
 
 	constructor(
 		private logger: Logger,
@@ -43,7 +46,7 @@ export class Parser {
 			});
 		}
 		catch (error) {
-			console.log('Could not fetch: ' + requestUrl, error);
+			console.error('Could not fetch: ' + requestUrl, error);
 		}
 	}
 
@@ -58,17 +61,19 @@ export class Parser {
 		}
 
 		if (!parsedJson.paths) {
-			console.log('paths missing at: ' + requestUrl);
+			console.error('paths missing at: ' + requestUrl);
 		}
 
 		if (!parsedJson.definitions) {
-			console.log('definitions missing at: ' + requestUrl);
+			console.error('definitions missing at: ' + requestUrl);
 			return;
 		}
 
 		this.parseParameters(parsedJson);
 		this.parseDefinitions(parsedJson);
 		this.parseServices(parsedJson);
+
+		this.generateServices();
 
 	}
 
@@ -91,12 +96,25 @@ export class Parser {
 	}
 
 	private parseServices(parsedJson: SwaggerModel) {
-		for (const path in parsedJson.paths) {
-			if (!parsedJson.paths.hasOwnProperty(path)) {
+		for (const servicePath in parsedJson.paths) {
+			if (!parsedJson.paths.hasOwnProperty(servicePath)) {
 				continue;
 			}
-			Storage.addService(Service.fromSwagger(path, parsedJson.paths[path]));
+			Storage.addService(Service.fromSwagger(servicePath, parsedJson.paths[servicePath]));
 		}
+	}
 
+	private generateServices() {
+		console.log(process.cwd());
+		const exportDestination: string = path.resolve(process.cwd() + '/' + this.config.destinationDir || this.fallbackDestinationDir);
+		console.log(exportDestination);
+		const services: {[key: string]:Service} = Storage.getServices();
+		for (const servicePath in services) {
+			if (!services.hasOwnProperty(servicePath)) {
+				continue;
+			}
+			services[servicePath].export(exportDestination);
+			process.exit(1);
+		}
 	}
 }

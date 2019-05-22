@@ -1,16 +1,23 @@
 {
-  "name": "ngx-from-swagger-json",
-  "version": "1.0.0",
+  "name": "@aiwha/ngx-from-swagger-json",
+  "version": "0.0.1",
   "description": "Generate Angular services from Swagger JSON",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "workspaces": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "watch": "tsc -w",
     "build": "tsc",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
     "postversion": "git push && git push --tags",
     "prepare": "npm run build",
-    "prepublishOnly": "npm test && npm run lint",
+    "prepublishOnly": "npm run lint",
     "preversion": "npm run lint",
     "test": "jest --config jestconfig.json",
     "version": "npm run format && git add -A src"

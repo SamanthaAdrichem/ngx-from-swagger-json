@@ -1,8 +1,8 @@
-import {DefinitionModel} from 'models/swagger/definition.model';
-import {InfoModel}       from 'models/swagger/info.model';
-import {ParameterModel}  from 'models/swagger/parameter.model';
-import {PathModel}       from 'models/swagger/path.model';
-import {ResponseModel}   from 'models/swagger/response.model';
+import {DefinitionModel} from './swagger/definition.model';
+import {InfoModel}       from './swagger/info.model';
+import {ParameterModel}  from './swagger/parameter.model';
+import {PathModel}       from './swagger/path.model';
+import {ResponseModel}   from './swagger/response.model';
 
 export class SwaggerModel {
 	public swagger?: string;

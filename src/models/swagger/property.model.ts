@@ -1,6 +1,6 @@
-import {PropertyFormatEnum} from 'models/swagger/property-format.enum';
-import {PropertyItemModel}  from 'models/swagger/property-item.model';
-import {PropertyTypeEnum}   from 'models/swagger/property-type.enum';
+import {PropertyFormatEnum} from './property-format.enum';
+import {PropertyItemModel}  from './property-item.model';
+import {PropertyTypeEnum}   from './property-type.enum';
 
 export class PropertyModel {
 	public type?: PropertyTypeEnum;

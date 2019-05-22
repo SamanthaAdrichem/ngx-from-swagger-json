@@ -1,7 +1,7 @@
-import {LibString}          from 'lib/string';
-import {DefinitionTypeEnum} from 'models/swagger/definition-type.enum';
-import {DefinitionModel}    from 'models/swagger/definition.model';
-import {DefinitionField}    from 'swagger/definition-field';
+import {LibString}          from '../lib/string';
+import {DefinitionTypeEnum} from '../models/swagger/definition-type.enum';
+import {DefinitionModel}    from '../models/swagger/definition.model';
+import {DefinitionField}    from './definition-field';
 
 export class Definition {
 	public static fromSwagger(definitionName: string, definitionModel: DefinitionModel): Definition {

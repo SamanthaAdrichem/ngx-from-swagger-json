@@ -1,4 +1,4 @@
-import {MethodModel} from 'models/swagger/method.model';
+import {MethodModel} from './method.model';
 
 export class PathModel {
 	public delete?: MethodModel;

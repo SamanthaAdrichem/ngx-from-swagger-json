@@ -1,6 +1,6 @@
-import {PropertyTypeEnum}        from 'models/swagger/property-type.enum';
-import {PropertyModel}           from 'models/swagger/property.model';
-import {DefinitionFieldTypeEnum} from 'swagger/definition-field-type.enum';
+import {PropertyTypeEnum}        from '../models/swagger/property-type.enum';
+import {PropertyModel}           from '../models/swagger/property.model';
+import {DefinitionFieldTypeEnum} from './definition-field-type.enum';
 
 export class DefinitionField {
 	public static fromSwagger(fieldName: string, fieldModel: PropertyModel): DefinitionField {
@@ -64,23 +64,23 @@ export class DefinitionField {
 
 			case 'enum':
 				this.fieldType = DefinitionFieldTypeEnum.enum;
-				console.log('ENUM: ', fieldModel);
+				// console.log('ENUM: ', fieldModel);
 				break;
 				// @todo fix it
 				// return fieldModel.enumModel;
 
 			case 'array':
 				this.fieldType = DefinitionFieldTypeEnum.array;
-				console.log('ARRAY: ', fieldModel.items);
+				// console.log('ARRAY: ', fieldModel.items);
 				break;
 
 			case 'object':
 				this.fieldType = DefinitionFieldTypeEnum.object;
-				console.log('OBJECT: ', fieldModel.items);
+				// console.log('OBJECT: ', fieldModel.items);
 				break;
 
 			default:
-				console.log('ERROR unknown :' + JSON.stringify(fieldModel));
+				// console.log('ERROR unknown :' + JSON.stringify(fieldModel));
 				break;
 		}
 	}
