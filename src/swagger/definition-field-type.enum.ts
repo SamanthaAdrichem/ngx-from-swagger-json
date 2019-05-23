@@ -1,4 +1,5 @@
 export enum DefinitionFieldTypeEnum {
+	any = 'any',
 	array = 'array',
 	boolean = 'boolean',
 	enum = 'enum',

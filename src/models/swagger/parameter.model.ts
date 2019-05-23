@@ -7,4 +7,5 @@ export class ParameterModel {
 	public name?: string;
 	public required?: boolean;
 	public type?: ParameterTypeEnum;
+	public $ref?: string;
 }

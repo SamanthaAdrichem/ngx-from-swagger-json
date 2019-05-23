@@ -11,8 +11,16 @@ export class Storage {
 		this.definitions[definition.swaggerName] = definition;
 	}
 
+	public static getDefinition(definitionRef: string): Definition|null {
+		return this.definitions[definitionRef.replace('#/definitions/', '')] || null;
+	}
+
 	public static addParameter(parameter: Parameter) {
 		this.parameters[parameter.name] = parameter;
+	}
+
+	public static getParameter(paramRef: string): Parameter|null {
+		return this.parameters[paramRef.replace('#/parameters/', '')] || null;
 	}
 
 	public static addService(service: Service): void {
