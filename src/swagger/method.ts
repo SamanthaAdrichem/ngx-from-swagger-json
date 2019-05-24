@@ -1,7 +1,9 @@
-import {Response}       from './response';
+import * as path        from "path";
+import * as process     from "process";
 import {MethodModel}    from '../models/swagger/method.model';
 import {ParameterModel} from '../models/swagger/parameter.model';
 import {Parameter}      from './parameter';
+import {Response}       from './response';
 
 export class Method {
 
@@ -56,6 +58,104 @@ export class Method {
 
 	public getParameter(paramName: string): Parameter|null {
 		return this.parameters[paramName] || null;
+	}
+
+	public exportFilter(serviceName: string, serviceFileName: string, exportDestination: string): boolean {
+		if (Object.keys(this.parameters).length < 1) {
+			return false;
+		}
+
+		let relativePath: string = exportDestination.replace(path.resolve(process.cwd()), '');
+		if (path.sep === '\\') {
+			relativePath = relativePath.replace(/\\/g, '/');
+		}
+		if (relativePath.substr(0, 1) === '/') {
+			relativePath = relativePath.substr(1);
+		}
+		if (relativePath.substr(-1) === '/') {
+			relativePath = relativePath.substr(0, relativePath.length - 1);
+		}
+
+		const modelName: string = this.getFilterName(serviceName);
+		const modelFileName: string = this.getFilterFileName(serviceFileName);
+		const imports: {[key: string]: string} = {};
+
+		let fileContents: string = "" +
+			"export class " + modelName + " {\n" +
+			"\n";
+
+		for (const paramKey in this.parameters) {
+			if (!this.parameters.hasOwnProperty(paramKey)) {
+				continue;
+			}
+			const parameter: Parameter = this.parameters[paramKey];
+			const paramName: string|null = parameter.getName();
+			if (null === paramName) {
+				continue;
+			}
+			fileContents += "" +
+				"\t" + paramName + ": " + parameter.getType() + ";\n";
+		}
+
+		fileContents += "" +
+			"\n" +
+			"\tconstructor(values?: " + modelName + ") {\n" +
+			"\t\tObject.assign(this, values || {});\n" +
+			"\t}\n" +
+			"\n" +
+			"}\n";
+
+		if (Object.keys(imports).length > 0) {
+			fileContents = Object.values(imports).join("\n") + "\n\n" + fileContents;
+		}
+
+		console.log('FILTER', fileContents);
+
+		return true;
+	}
+
+	public getFilterName(serviceName: string): string {
+		return serviceName.replace('Service', 'FilterModel');
+	}
+
+	public getFilterFileName(serviceFileName: string): string {
+		return serviceFileName.replace('.service.ts', '-filter.model.ts');
+	}
+
+	public exportBody(exportDestination: string): boolean {
+		for (const param in this.parameters) {
+			if (!this.parameters.hasOwnProperty(param)) {
+				continue;
+			}
+			if (this.parameters[param].swaggerName === 'body') {
+				return this.parameters[param].export(exportDestination);
+			}
+		}
+		return false;
+	}
+
+	public getBodyName(): string|null {
+		for (const param in this.parameters) {
+			if (!this.parameters.hasOwnProperty(param)) {
+				continue;
+			}
+			if (this.parameters[param].swaggerName === 'body') {
+				return this.parameters[param].getName();
+			}
+		}
+		return null;
+	}
+
+	public getBodyImportStatement(exportDestination: string): string|null {
+		for (const param in this.parameters) {
+			if (!this.parameters.hasOwnProperty(param)) {
+				continue;
+			}
+			if (this.parameters[param].swaggerName === 'body') {
+				return this.parameters[param].getImportStatement(exportDestination);
+			}
+		}
+		return null;
 	}
 
 }

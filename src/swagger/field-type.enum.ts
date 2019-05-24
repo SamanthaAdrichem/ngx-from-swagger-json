@@ -1,4 +1,4 @@
-export enum DefinitionFieldTypeEnum {
+export enum FieldTypeEnum {
 	any = 'any',
 	array = 'array',
 	boolean = 'boolean',

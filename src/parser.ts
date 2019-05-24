@@ -107,7 +107,7 @@ export class Parser {
 	private generateServices() {
 		const exportDestination: string = path.resolve(process.cwd() + '/' + this.config.destinationDir || this.fallbackDestinationDir);
 		const services: {[key: string]:Service} = Storage.getServices();
-		services['/publishers/programs'].export(exportDestination);
+		services['/publishers/phonenumbers'].export(exportDestination);
 		process.exit(1);
 		for (const servicePath in services) {
 			if (!services.hasOwnProperty(servicePath)) {

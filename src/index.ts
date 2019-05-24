@@ -5,7 +5,7 @@ import {ConfigModel}  from './config/config.model';
 import {Logger}       from './logger';
 import {Parser}       from './parser';
 
-const rootPath = './../'; // @todo determin project root
+const rootPath = process.cwd();
 const verbose = true; // @todo read from arguments
 const loggerInstance = new Logger(verbose);
 

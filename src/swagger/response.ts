@@ -1,8 +1,8 @@
-import {Storage}                from '../storage';
-import {Definition}             from './definition';
-import {ResponseSchemaTypeEnum} from '../models/swagger/response-schema-type.enum';
-import {ResponseModel}          from '../models/swagger/response.model';
-import {ResponseTypeEnum}       from './/response-type.enum';
+import {ResponseModel}  from '../models/swagger/response.model';
+import {SchemaTypeEnum} from '../models/swagger/schema-type.enum';
+import {Storage}        from '../storage';
+import {Definition}     from './definition';
+import {FieldTypeEnum}  from './field-type.enum';
 
 export class Response {
 
@@ -10,20 +10,20 @@ export class Response {
 		const response: Response = new Response(code);
 
 		if (responseModel.schema) {
-			response.setType(responseModel.schema.type === ResponseSchemaTypeEnum.array ? ResponseTypeEnum.array : ResponseTypeEnum.object);
+			response.setType(responseModel.schema.type === SchemaTypeEnum.array ? FieldTypeEnum.array : FieldTypeEnum.object);
 			response.setRef((responseModel.schema.items && responseModel.schema.items.$ref ? responseModel.schema.items.$ref : responseModel.schema.$ref) || '');
 		}
 		return response;
 	}
 
-	private type?: ResponseTypeEnum;
+	private type?: FieldTypeEnum;
 	private ref?: string;
 
 	constructor(
 		public responseCode: number
 	) {}
 
-	public setType(type: ResponseTypeEnum): void {
+	public setType(type: FieldTypeEnum): void {
 		this.type = type;
 	}
 

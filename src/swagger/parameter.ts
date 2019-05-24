@@ -1,34 +1,125 @@
-import {ParameterModel} from '../models/swagger/parameter.model';
+import {Definition}       from './definition';
+import {ParameterModel}   from '../models/swagger/parameter.model';
+import {PropertyTypeEnum} from '../models/swagger/property-type.enum';
+import {SchemaTypeEnum}   from '../models/swagger/schema-type.enum';
+import {Storage}          from '../storage';
+import {FieldTypeEnum}    from './field-type.enum';
 
 export class Parameter {
 
 	public static fromSwagger(paramName: string, paramModel: ParameterModel): Parameter {
-		const parameter: Parameter = new Parameter(paramName);
+		const parameter: Parameter = new Parameter(paramName || paramModel.name || '', paramModel.name || paramName);
 		if (paramModel.$ref) {
-			parameter.ref = paramModel.$ref;
+			parameter.paramRef = paramModel.$ref;
 		} else {
-			// console.log('x', paramName, paramModel);
+			parameter.parseFieldType(paramModel);
 		}
 		return parameter;
 	}
 
-	private ref?: string;
+	private paramRef?: string;
+	private schemaRef?: string;
+	private type?: FieldTypeEnum|null;
 
 	constructor(
+		public swaggerName: string,
 		public name: string
 	) {}
 
 	public getName(): string {
+		if (this.paramRef) {
+			const param: Parameter|null = Storage.getParameter(this.paramRef);
+			if (param) {
+				return param.getName();
+			}
+		}
+		if (this.schemaRef) {
+			const definition: Definition|null = Storage.getDefinition(this.schemaRef);
+			if (definition) {
+				const modelName: string|null = definition.getModelName();
+				if (modelName) {
+					return modelName;
+				}
+			}
+		}
 		if (this.name) {
 			return this.name;
-		}
-		if (this.ref) {
-			return this.ref.replace('#/parameters/', '');
 		}
 		return '';
 	}
 
-	public getType(): string {
-		return 'string'; // @todo fix it
+	public getImportStatement(exportDestination: string): string|null {
+		if (this.paramRef) {
+			const param: Parameter|null = Storage.getParameter(this.paramRef);
+			if (param) {
+				return param.getImportStatement(exportDestination);
+			}
+		}
+		if (this.schemaRef) {
+			const definition: Definition|null = Storage.getDefinition(this.schemaRef);
+			if (definition) {
+				return definition.getImportStatement(exportDestination);
+			}
+		}
+		return null;
+	}
+
+	public getType(): FieldTypeEnum {
+		if (this.paramRef) {
+			const param: Parameter|null = Storage.getParameter(this.paramRef);
+			if (param) {
+				return param.getType();
+			}
+		}
+		return this.type || FieldTypeEnum.any;
+	}
+
+	public parseFieldType(fieldModel: ParameterModel) {
+		if (fieldModel.schema && fieldModel.schema) {
+			this.type = fieldModel.schema.type === SchemaTypeEnum.array ? FieldTypeEnum.array : FieldTypeEnum.object;
+			this.schemaRef = (fieldModel.schema.items && fieldModel.schema.items.$ref ? fieldModel.schema.items.$ref : fieldModel.schema.$ref) || '';
+			return;
+		}
+
+		switch (fieldModel.type) {
+			case PropertyTypeEnum.boolean:
+				this.type = FieldTypeEnum.boolean;
+				break;
+
+			case PropertyTypeEnum.number:
+			case PropertyTypeEnum.integer:
+				this.type = FieldTypeEnum.number;
+				break;
+
+			case PropertyTypeEnum.date:
+			case PropertyTypeEnum.string:
+				this.type = FieldTypeEnum.string;
+				break;
+
+			default:
+				console.error('ERROR unknown :' + JSON.stringify(fieldModel));
+				this.type = FieldTypeEnum.any;
+				break;
+		}
+	}
+
+	public export(exportDestination: string): boolean {
+		if (!this.schemaRef) {
+			return false;
+		}
+		const definition: Definition|null = Storage.getDefinition(this.schemaRef);
+		if (!definition) {
+			return false;
+		}
+		definition.export(exportDestination);
+		return true;
 	}
 }
+
+// public export(exportDestination: string): void {
+// 	const definition: Definition|null = Storage.getDefinition(this.ref || '');
+// 	if (!definition) {
+// 		return;
+// 	}
+// 	return definition.export(exportDestination);
+// }

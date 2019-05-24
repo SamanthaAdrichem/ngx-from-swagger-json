@@ -1,9 +1,9 @@
-import {LibString}               from '../lib/string';
-import {PropertyTypeEnum}        from '../models/swagger/property-type.enum';
-import {PropertyModel}           from '../models/swagger/property.model';
-import {Storage}                 from '../storage';
-import {Definition}              from './definition';
-import {DefinitionFieldTypeEnum} from './definition-field-type.enum';
+import {LibString}        from '../lib/string';
+import {PropertyTypeEnum} from '../models/swagger/property-type.enum';
+import {PropertyModel}    from '../models/swagger/property.model';
+import {Storage}          from '../storage';
+import {Definition}       from './definition';
+import {FieldTypeEnum}    from './field-type.enum';
 
 export class DefinitionField {
 	public static fromSwagger(fieldName: string, fieldModel: PropertyModel): DefinitionField {
@@ -13,8 +13,8 @@ export class DefinitionField {
 	}
 
 	public name: string = '';
-	public fieldType?: DefinitionFieldTypeEnum;
-	public subFieldType?: DefinitionFieldTypeEnum;
+	public fieldType?: FieldTypeEnum;
+	public subFieldType?: FieldTypeEnum;
 	public subFieldRef?: string;
 	public enumValues?: string[]|number[];
 
@@ -55,21 +55,21 @@ export class DefinitionField {
 		switch (fieldType)
 		{
 			case PropertyTypeEnum.boolean:
-				this.fieldType = DefinitionFieldTypeEnum.boolean;
+				this.fieldType = FieldTypeEnum.boolean;
 				break;
 
 			case PropertyTypeEnum.number:
 			case PropertyTypeEnum.integer:
-				this.fieldType = DefinitionFieldTypeEnum.number;
+				this.fieldType = FieldTypeEnum.number;
 				break;
 
 			case PropertyTypeEnum.date:
 			case PropertyTypeEnum.string:
-				this.fieldType = DefinitionFieldTypeEnum.string;
+				this.fieldType = FieldTypeEnum.string;
 				break;
 
 			case 'enum':
-				this.fieldType = DefinitionFieldTypeEnum.enum;
+				this.fieldType = FieldTypeEnum.enum;
 				this.parseSubFieldType(fieldModel);
 				if (fieldModel.enum) {
 					this.enumValues = fieldModel.enum;
@@ -80,19 +80,19 @@ export class DefinitionField {
 				if (fieldModel.items) {
 					this.parseSubFieldType(fieldModel.items);
 				}
-				this.fieldType = DefinitionFieldTypeEnum.array;
+				this.fieldType = FieldTypeEnum.array;
 				break;
 
 			case 'object':
 				if (fieldModel.items) {
 					this.parseSubFieldType(fieldModel.items);
 				}
-				this.fieldType = DefinitionFieldTypeEnum.object;
+				this.fieldType = FieldTypeEnum.object;
 				break;
 
 			default:
 				console.error('ERROR unknown :' + JSON.stringify(fieldModel));
-				this.fieldType = DefinitionFieldTypeEnum.any;
+				this.fieldType = FieldTypeEnum.any;
 				break;
 		}
 	}
@@ -100,40 +100,40 @@ export class DefinitionField {
 	public parseSubFieldType(subFieldType: PropertyModel) {
 		if (subFieldType.$ref) {
 			this.subFieldRef = subFieldType.$ref;
-			this.subFieldType = DefinitionFieldTypeEnum.object;
+			this.subFieldType = FieldTypeEnum.object;
 			return;
 		}
 		switch (subFieldType.type) {
 			case PropertyTypeEnum.boolean:
-				this.subFieldType = DefinitionFieldTypeEnum.boolean;
+				this.subFieldType = FieldTypeEnum.boolean;
 				break;
 
 			case PropertyTypeEnum.number:
 			case PropertyTypeEnum.integer:
-				this.subFieldType = DefinitionFieldTypeEnum.number;
+				this.subFieldType = FieldTypeEnum.number;
 				break;
 
 			case PropertyTypeEnum.date:
 			case PropertyTypeEnum.string:
-				this.subFieldType = DefinitionFieldTypeEnum.string;
+				this.subFieldType = FieldTypeEnum.string;
 				break;
 
 			default:
 				console.error('ERROR unknown subfield: ' + JSON.stringify(subFieldType));
-				this.subFieldType = DefinitionFieldTypeEnum.any;
+				this.subFieldType = FieldTypeEnum.any;
 				break;
 		}
 	}
 
-	public getType(): DefinitionFieldTypeEnum|null {
+	public getType(): FieldTypeEnum|null {
 		return this.fieldType || null;
 	}
 
-	public getSubFieldType(): DefinitionFieldTypeEnum {
+	public getSubFieldType(): FieldTypeEnum {
 		if (this.subFieldType) {
 			return this.subFieldType;
 		}
-		return DefinitionFieldTypeEnum.any;
+		return FieldTypeEnum.any;
 	}
 
 	public getModelName(): string|null {

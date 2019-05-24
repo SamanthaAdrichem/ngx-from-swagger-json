@@ -1,65 +1,80 @@
-import * as fs     from 'fs';
-import * as path   from 'path';
-import {LibString} from '../lib/string';
-import {PathModel} from '../models/swagger/path.model';
-import {Method}    from './method';
-import {Parameter} from './parameter';
+import * as fs      from 'fs';
+import * as path    from 'path';
+import * as process from "process";
+import {LibArray}   from '../lib/array';
+import {LibString}  from '../lib/string';
+import {PathModel}  from '../models/swagger/path.model';
+import {Method}     from './method';
+import {Parameter}  from './parameter';
 
 export class Service {
 
 	public static fromSwagger(swaggerPath: string, methods: PathModel): Service {
 		const service: Service = new Service();
 		const pathParams = LibString.extractSwaggerParams(swaggerPath);
-		let isIdPath: boolean = false;
+		const pathParamDict: string[] = [];
 		let servicePath: string = swaggerPath;
 		let apiPath: string = swaggerPath;
-		const pathParamDict: string[] = [];
+		let idParam: string|null = null;
 
 		pathParams.map((param) => {
+			servicePath = servicePath.replace('/' + param, '');
+
 			if (true === swaggerPath.endsWith(param)) {
-				service.setIdParam(param);
-				isIdPath = true;
+				idParam = service.parseUrlParam(param);
 				apiPath = apiPath.replace(param, '');
 				return;
 			}
 			pathParamDict.push(service.parseUrlParam(param));
-			servicePath = servicePath.replace('/' + param, '');
 			apiPath = apiPath.replace(param , "' + " + LibString.camelCaseName(service.parseUrlParam(param)) + " + '");
 		});
 
 		service.setServicePath(servicePath);
 		service.setApiPath(apiPath);
 
-		if (servicePath === '/publishers/programs') {
-			// console.log(pathParamDict);
+		if (servicePath === '/publishers/phonenumbers') {
+			// console.log('pathParamDict', pathParamDict);
 		}
 
 		if (methods.get) {
-			service.addMethod(Method.fromSwagger('get', methods.get, isIdPath));
+			service.addMethod(Method.fromSwagger('get', methods.get, !!idParam));
 		}
 		if (methods.put) {
-			service.addMethod(Method.fromSwagger('put', methods.put, isIdPath));
+			service.addMethod(Method.fromSwagger('put', methods.put, !!idParam));
 		}
 		if (methods.post) {
-			service.addMethod(Method.fromSwagger('post', methods.post, isIdPath));
+			service.addMethod(Method.fromSwagger('post', methods.post, !!idParam));
 		}
 		if (methods.delete) {
-			service.addMethod(Method.fromSwagger('delete', methods.delete, isIdPath));
+			service.addMethod(Method.fromSwagger('delete', methods.delete, !!idParam));
 		}
 		if (methods.patch) {
-			service.addMethod(Method.fromSwagger('patch', methods.patch, isIdPath));
+			service.addMethod(Method.fromSwagger('patch', methods.patch, !!idParam));
 		}
 
 		const serviceMethods: {[key: string]:Method} = service.getMethods();
 
-		for (const paramName of pathParamDict) {
+		if (idParam) {
 			for (const methodName in serviceMethods) {
+				if (!serviceMethods.hasOwnProperty(methodName)) {
+					continue;
+				}
+				const parameter: Parameter|null = serviceMethods[methodName].getParameter(idParam);
+				if (parameter) {
+					service.setIdParam(parameter);
+				}
+			}
+		}
+
+		paramLoop: for (const paramName of pathParamDict) {
+			methodLoop: for (const methodName in serviceMethods) {
 				if (!serviceMethods.hasOwnProperty(methodName)) {
 					continue;
 				}
 				const parameter: Parameter|null = serviceMethods[methodName].getParameter(paramName);
 				if (parameter) {
 					service.addPathParam(parameter);
+					continue paramLoop;
 				}
 			}
 		}
@@ -68,7 +83,7 @@ export class Service {
 	}
 
 	private apiPath: string = '';
-	private idParam?: string;
+	private idParam?: Parameter;
 	private methods: {[key: string]:Method} = {};
 	private pathParams: Parameter[] = [];
 	private servicePath: string = '';
@@ -88,8 +103,8 @@ export class Service {
 		this.pathParams.push(parameter);
 	}
 
-	public setIdParam(paramName: string): void {
-		this.idParam = this.parseUrlParam(paramName);
+	public setIdParam(idParam: Parameter): void {
+		this.idParam = idParam;
 	}
 
 	public setServicePath(servicePath: string): void {
@@ -124,6 +139,9 @@ export class Service {
 				continue;
 			}
 			this.addMethod(methods[method]);
+			if (!this.idParam) {
+				this.idParam = service.idParam;
+			}
 		}
 	}
 
@@ -131,18 +149,45 @@ export class Service {
 		if (!this.servicePath) {
 			return null;
 		}
-		return LibString.upperCamelCaseName((this.servicePath.split('/').pop() || '')) || null;
+		const serviceName: string|undefined = this.servicePath.split('/').pop();
+		if (!serviceName) {
+			return null;
+		}
+		return LibString.upperCamelCaseName(serviceName) + 'Service';
+	}
+
+	public getServiceFileName(): string|null {
+		if (!this.servicePath) {
+			return null;
+		}
+		const serviceName: string|undefined = this.servicePath.split('/').pop();
+		if (!serviceName) {
+			return null;
+		}
+		return LibString.dashCaseName(serviceName) + '.service.ts';
 	}
 
 	public export(rootExportDestination: string): void {
 		const serviceName: string|null = this.getServiceName();
-		if (null === serviceName) {
+		const serviceFilename: string|null = this.getServiceFileName();
+		if (null === serviceName || null === serviceFilename) {
 			console.warn('Could not export empty service', this);
 			return;
 		}
 
 		const serviceDirectory: string = this.getServiceDirectory() || '';
 		const fullServiceDirectory: string = rootExportDestination + serviceDirectory;
+		let relativePath: string = fullServiceDirectory.replace(path.resolve(process.cwd()), '');
+		if (path.sep === '\\') {
+			relativePath = relativePath.replace(/\\/g, '/');
+		}
+		if (relativePath.substr(0, 1) === '/') {
+			relativePath = relativePath.substr(1);
+		}
+		if (relativePath.substr(-1) === '/') {
+			relativePath = relativePath.substr(0, relativePath.length - 1);
+		}
+
 
 		// const serviceDirectory =
 		// console.log(this, serviceName, serviceDirectory, path.resolve(rootExportDestination + '/' + serviceDirectory));
@@ -155,10 +200,9 @@ export class Service {
 			}
 		}
 
-		const imports: string[] = [];
+		const imports: {[key: string]:string} = {};
 		let fileContents: string = '';
 		const pathParams: string[] = [];
-		console.log('wee', this.pathParams);
 		this.pathParams.map((parameter: Parameter) => {
 			pathParams.push(LibString.camelCaseName(parameter.getName()) + ': ' + parameter.getType());
 		});
@@ -172,50 +216,97 @@ export class Service {
 			"\t) {}\n" +
 			"\n";
 
+// @todo response model array!
+// @todo fix all import statements
+
 		if (this.methods.get) {
-			const requestParams: string = pathParams.join(',');
-			if (this.methods.get.parameters) {
-				// generate body
+			const method: Method = this.methods.get;
+			let hasFilter: boolean = false;
+			let requestParams: string = pathParams.join(', ');
+			if (method.exportFilter(serviceName, serviceFilename, fullServiceDirectory)) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'filter: ' + method.getFilterName(serviceName);
+				const filterImportPath: string|null = method.getFilterFileName(serviceFilename || '').replace('.ts', '');
+				if (filterImportPath) {
+					imports[filterImportPath] = "import {" + method.getFilterName(serviceName) + "} from '" + relativePath + '/' + filterImportPath + "';";
+				}
+				hasFilter = true;
 			}
 			let responseModel: string = 'void';
-			console.log(this.pathParams);
-			if (this.methods.get.response) {
-				responseModel = this.methods.get.response.getModelName() || responseModel;
+			if (method.response) {
+				responseModel = method.response.getModelName() || responseModel;
 				if ('void' !== responseModel) {
-					this.methods.get.response.export(fullServiceDirectory);
-					const importStatement: string|null = this.methods.get.response.getImportStatement(rootExportDestination);
-					if (null !== importStatement) {
-						imports.push(importStatement);
-					}
+					method.response.export(fullServiceDirectory);
+					// const importFileName: string|null = method.response.getImportStatement(fullServiceDirectory);
+					// if (null !== importFileName) {
+					// 	imports[importFileName] = importFileName;
+					// }
 				}
 			}
 			fileContents += "" +
 				"\tget(" + requestParams + "): Observable<" + responseModel + "> {\n" +
 				"\t\treturn this.httpClient.get<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + (requestParams ? ',' : '') + "'\n" +
-				(requestParams ? "\t\t\tquery || {}\n" : "") +
+				"\t\t\t'" + this.apiPath + (hasFilter ? ',' : '') + "'\n" +
+				(hasFilter ? "\t\t\tfilter || {}\n" : "") +
 				"\t\t);\n" +
 				"\t)\n" +
 				"\n";
 		}
 
-		if (this.methods.getById) {
-			const idParamType: string = '';
-			const responseModel: string = '';
+		if (this.methods.getById && this.idParam) {
+			const method: Method = this.methods.getById;
+
+			let requestParams: string = pathParams.join(', ');
+			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
+			if (idParamName) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
+			}
+
+			let responseModel: string = 'void';
+			if (method.response) {
+				responseModel = method.response.getModelName() || responseModel;
+				if ('void' !== responseModel) {
+					method.response.export(fullServiceDirectory);
+					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
+					// if (null !== importStatement) {
+					// 	imports.push(importStatement);
+					// }
+				}
+			}
+
 			fileContents += "" +
-				"\tgetById(" + this.idParam + ": " + idParamType + "): Observable<" + responseModel + "> {\n" +
+				"\tgetById(" + requestParams + "): Observable<" + responseModel + "> {\n" +
 				"\t\treturn this.httpClient.get<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + '/{{' + this.idParam + "}}'\n" +
+				"\t\t\t'" + this.apiPath + "/' + " + idParamName + "\n" +
 				"\t\t);\n" +
 				"\t)\n" +
 				"\n";
 		}
 
 		if (this.methods.create) {
-			const requestBody: string = '';
-			const responseModel: string = '';
+			const method: Method = this.methods.create;
+
+			let requestParams: string = pathParams.join(', ');
+			if (method.exportBody(fullServiceDirectory)) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
+				// const bodyImportStatement: string|null = method.getBodyImportStatement(fullServiceDirectory);
+				// if (bodyImportStatement) {
+				// 	imports.push(bodyImportStatement);
+				// }
+			}
+			let responseModel: string = 'void';
+			if (method.response) {
+				responseModel = method.response.getModelName() || responseModel;
+				if ('void' !== responseModel) {
+					method.response.export(fullServiceDirectory);
+					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
+					// if (null !== importStatement) {
+					// 	imports.push(importStatement);
+					// }
+				}
+			}
+
 			fileContents += "" +
-				"\tcreate(" + requestBody + "): Observable<" + responseModel + "> {\n" +
+				"\tcreate(" + requestParams + "): Observable<" + responseModel + "> {\n" +
 				"\t\treturn this.httpClient.post<" + responseModel + ">(\n" +
 				"\t\t\t'" + this.apiPath + "',\n" +
 				"\t\t\tbody\n" +
@@ -224,27 +315,69 @@ export class Service {
 				"\n";
 		}
 
-		if (this.methods.update) {
-			const idParamType: string = '';
-			const requestBody: string = '';
-			const responseModel: string = '';
+		if (this.methods.update && this.idParam) {
+			const method: Method = this.methods.update;
+
+			let requestParams: string = pathParams.join(', ');
+			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
+			if (idParamName) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
+			}
+
+			if (method.exportBody(fullServiceDirectory)) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
+				// const bodyImportStatement: string|null = method.getBodyImportStatement(fullServiceDirectory);
+				// if (bodyImportStatement) {
+				// 	imports.push(bodyImportStatement);
+				// }
+			}
+			let responseModel: string = 'void';
+			if (method.response) {
+				responseModel = method.response.getModelName() || responseModel;
+				if ('void' !== responseModel) {
+					method.response.export(fullServiceDirectory);
+					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
+					// if (null !== importStatement) {
+					// 	imports.push(importStatement);
+					// }
+				}
+			}
+
 			fileContents += "" +
-				"\tcreate(" + this.idParam + ": " + idParamType + ", " + requestBody + "): Observable<" + responseModel + "> {\n" +
+				"\tupdate(" + requestParams + "): Observable<" + responseModel + "> {\n" +
 				"\t\treturn this.httpClient.put<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + '/{{' + this.idParam + "}}',\n" +
+				"\t\t\t'" + this.apiPath + "/' + " + idParamName + ",\n" +
 				"\t\t\tbody\n" +
 				"\t\t);\n" +
 				"\t)\n" +
 				"\n";
 		}
 
-		if (this.methods.remove) {
-			const idParamType: string = '';
-			const responseModel: string = '';
+		if (this.methods.remove && this.idParam) {
+			const method: Method = this.methods.remove;
+
+			let requestParams: string = pathParams.join(', ');
+			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
+			if (idParamName) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
+			}
+
+			let responseModel: string = 'void';
+			if (method.response) {
+				responseModel = method.response.getModelName() || responseModel;
+				if ('void' !== responseModel) {
+					method.response.export(fullServiceDirectory);
+					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
+					// if (null !== importStatement) {
+					// 	imports.push(importStatement);
+					// }
+				}
+			}
+
 			fileContents += "" +
-				"\tremove(" + this.idParam + ": " + idParamType + "): Observable<" + responseModel + "> {\n" +
-				"\t\treturn this.httpClient.get<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + '/{{' + this.idParam + "}}'\n" +
+				"\tremove(" + requestParams + "): Observable<" + responseModel + "> {\n" +
+				"\t\treturn this.httpClient.delete<" + responseModel + ">(\n" +
+				"\t\t\t'" + this.apiPath + "/' + " + idParamName + "\n" +
 				"\t\t);\n" +
 				"\t)\n" +
 				"\n";
@@ -253,9 +386,15 @@ export class Service {
 		fileContents += "" +
 			"}\n";
 
-		if (imports.length > 0) {
-			fileContents = imports.join("\n") + "\n\n" + fileContents;
+		const importKeys: string[] = Object.keys(imports).sort();
+		if (importKeys.length > 0) {
+			const importsSorted: string[] = [];
+			for (const importName of importKeys) {
+				importsSorted.push(imports[importName]);
+			}
+			fileContents = LibArray.distinct(importsSorted).join("\n") + "\n\n" + fileContents
 		}
+
 		console.log(fileContents, imports);
 
 

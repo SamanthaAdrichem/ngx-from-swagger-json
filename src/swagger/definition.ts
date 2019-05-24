@@ -1,10 +1,10 @@
-import * as path                 from 'path';
-import * as process              from 'process';
-import {DefinitionFieldTypeEnum} from './definition-field-type.enum';
-import {LibString}               from '../lib/string';
-import {DefinitionTypeEnum}      from '../models/swagger/definition-type.enum';
-import {DefinitionModel}         from '../models/swagger/definition.model';
-import {DefinitionField}         from './definition-field';
+import * as path            from 'path';
+import * as process         from 'process';
+import {LibString}          from '../lib/string';
+import {DefinitionTypeEnum} from '../models/swagger/definition-type.enum';
+import {DefinitionModel}    from '../models/swagger/definition.model';
+import {DefinitionField}    from './definition-field';
+import {FieldTypeEnum}      from './field-type.enum';
 
 export class Definition {
 	public static fromSwagger(definitionName: string, definitionModel: DefinitionModel): Definition {
@@ -62,7 +62,7 @@ export class Definition {
 		if (!this.angularName) {
 			return null;
 		}
-		return "import {" + this.getModelName() + "} from '" + relativePath + '/' + (this.getModelFileName() || '').replace('.ts', '') + "'";
+		return "import {" + this.getModelName() + "} from '" + relativePath + '/' + (this.getModelFileName() || '').replace('.ts', '') + "';";
 	}
 
 	public getModelFileName(): string|null {
@@ -109,8 +109,8 @@ export class Definition {
 			const fieldModelFileName: string|null = ((field.getModelFileName() || '').replace('.ts', '')) || null;
 			let fieldType: string|null = field.getType();
 			switch (fieldType) {
-				case DefinitionFieldTypeEnum.enum:
-				case DefinitionFieldTypeEnum.object:
+				case FieldTypeEnum.enum:
+				case FieldTypeEnum.object:
 					field.export(exportDestination);
 					if (fieldModelName && fieldModelFileName) {
 						imports[fieldModelFileName] = "import {" + fieldModelName + "} from '" + relativePath + '/' + fieldModelFileName + "';"; // @todo path
@@ -118,9 +118,9 @@ export class Definition {
 					}
 					break;
 
-				case DefinitionFieldTypeEnum.array:
+				case FieldTypeEnum.array:
 					fieldType = field.getSubFieldType();
-					if (DefinitionFieldTypeEnum.object === fieldType) {
+					if (FieldTypeEnum.object === fieldType) {
 						if (fieldModelName && fieldModelFileName) {
 							imports[fieldModelFileName] = "import {" + fieldModelName + "} from '" + relativePath + '/' + fieldModelFileName + "';"; // @todo path
 							fieldType = fieldModelName

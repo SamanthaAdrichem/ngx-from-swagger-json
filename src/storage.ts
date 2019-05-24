@@ -16,7 +16,7 @@ export class Storage {
 	}
 
 	public static addParameter(parameter: Parameter) {
-		this.parameters[parameter.name] = parameter;
+		this.parameters[parameter.swaggerName] = parameter;
 	}
 
 	public static getParameter(paramRef: string): Parameter|null {

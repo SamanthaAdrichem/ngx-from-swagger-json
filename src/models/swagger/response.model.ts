@@ -1,5 +1,5 @@
-import {ResponseSchemaModel} from './response-schema.model';
+import {SchemaModel} from './schema.model';
 
 export class ResponseModel {
-	public schema?: ResponseSchemaModel;
+	public schema?: SchemaModel;
 }
