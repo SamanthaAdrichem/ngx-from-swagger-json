@@ -1,16 +1,19 @@
-import * as path        from "path";
-import * as process     from "process";
-import {MethodModel}    from '../models/swagger/method.model';
-import {ParameterModel} from '../models/swagger/parameter.model';
-import {Parameter}      from './parameter';
-import {Response}       from './response';
+import * as path          from "path";
+import * as process       from "process";
+import {LibString}        from '../lib/string';
+import {MethodModel}      from '../models/swagger/method.model';
+import {ParameterInEnum}  from '../models/swagger/parameter-in.enum';
+import {ParameterModel}   from '../models/swagger/parameter.model';
+import {MethodActionEnum} from './method-action.enum';
+import {MethodEnum}       from './method.enum';
+import {Parameter}        from './parameter';
+import {Response}         from './response';
 
 export class Method {
 
 	public static fromSwagger(methodName: string, methodModel: MethodModel, isIdPath: boolean): Method {
-		const method: Method = new Method();
+		const method: Method = new Method(methodName, isIdPath);
 		method.id = methodModel.operationId;
-		method.name = Method.getMethodName(methodName, isIdPath);
 		if (methodModel.parameters) {
 			methodModel.parameters.map((parameter: ParameterModel) => method.addParameter(Parameter.fromSwagger(parameter.name || '', parameter)));
 		}
@@ -24,32 +27,38 @@ export class Method {
 		return method;
 	}
 
-	public static getMethodName(methodName: string, isIdPath: boolean): string|null {
-		switch (methodName) {
-			case 'get':
-				return isIdPath ? 'getById' : 'get';
-
-			case 'post':
-				return 'create';
-
-			case 'delete':
-				return 'remove';
-
-			case 'put':
-				return 'update';
-
-			default:
-				return null;
-		}
-	}
-
-	public name: string|null = null;
+	public name: MethodEnum|null = null;
 	public id?: string;
 	public parameters: {[key: string]: Parameter} = {};
+	public pathParameters: {[key: string]: Parameter} = {};
 	public response?: Response;
+	public apiAction?: MethodActionEnum;
+
+	public constructor(
+		methodName: string,
+		private idAction: boolean
+	) {
+		this.parseMethodName(methodName);
+	}
+
+	public isIdAction(): boolean {
+		return this.idAction;
+	}
 
 	public addParameter(parameter: Parameter): void {
-		this.parameters[parameter.getName()] = parameter;
+		switch (parameter.getSource()) {
+			case ParameterInEnum.query:
+				this.parameters[parameter.getName()] = parameter;
+				break;
+
+			case ParameterInEnum.path:
+				this.pathParameters[parameter.getName()] = parameter;
+				break;
+
+			default:
+				console.warn('Missing IN', parameter);
+		}
+
 	}
 
 	public setResponseModel(response: Response): void {
@@ -57,10 +66,10 @@ export class Method {
 	}
 
 	public getParameter(paramName: string): Parameter|null {
-		return this.parameters[paramName] || null;
+		return this.parameters[paramName] || this.pathParameters[paramName] || null;
 	}
 
-	public exportFilter(serviceName: string, serviceFileName: string, exportDestination: string): boolean {
+	public exportFilter(methodName: MethodEnum, serviceName: string, serviceFilename: string, exportDestination: string): boolean {
 		if (Object.keys(this.parameters).length < 1) {
 			return false;
 		}
@@ -76,15 +85,16 @@ export class Method {
 			relativePath = relativePath.substr(0, relativePath.length - 1);
 		}
 
-		const modelName: string = this.getFilterName(serviceName);
-		const modelFileName: string = this.getFilterFileName(serviceFileName);
+		const modelName: string = this.getFilterName(methodName, serviceName);
+		const modelFilename: string = this.getFilterFilename(methodName, serviceFilename);
 		const imports: {[key: string]: string} = {};
 
 		let fileContents: string = "" +
 			"export class " + modelName + " {\n" +
 			"\n";
 
-		for (const paramKey in this.parameters) {
+		const paramKeys: string[] = Object.keys(this.parameters).sort();
+		for (const paramKey of paramKeys) {
 			if (!this.parameters.hasOwnProperty(paramKey)) {
 				continue;
 			}
@@ -109,17 +119,23 @@ export class Method {
 			fileContents = Object.values(imports).join("\n") + "\n\n" + fileContents;
 		}
 
-		console.log('FILTER', fileContents);
+		console.log('OUTPUT: filter', "\n" + fileContents);
 
 		return true;
 	}
 
-	public getFilterName(serviceName: string): string {
-		return serviceName.replace('Service', 'FilterModel');
+	public getFilterName(methodName: MethodEnum, serviceName: string): string {
+		return serviceName.replace('Service', LibString.upperCamelCaseName(methodName) + 'FilterModel');
 	}
 
-	public getFilterFileName(serviceFileName: string): string {
-		return serviceFileName.replace('.service.ts', '-filter.model.ts');
+	public getFilterFilename(methodName: MethodEnum, serviceFilename: string): string {
+		switch (methodName) {
+			case MethodEnum.getById:
+				return serviceFilename.replace('.service.ts', '-get-by-id-filter.model.ts');
+
+			default:
+				return serviceFilename.replace('.service.ts', '-' + methodName + '-filter.model.ts');
+		}
 	}
 
 	public exportBody(exportDestination: string): boolean {
@@ -156,6 +172,33 @@ export class Method {
 			}
 		}
 		return null;
+	}
+
+	private parseMethodName(methodName: string): void {
+		switch (methodName) {
+			case 'get':
+				this.name = this.idAction ? MethodEnum.getById : MethodEnum.get;
+				this.apiAction = this.idAction ? MethodActionEnum.getById : MethodActionEnum.get;
+				break;
+
+			case 'post':
+				this.name = MethodEnum.create;
+				this.apiAction = MethodActionEnum.create;
+				break;
+
+			case 'delete':
+				this.name = MethodEnum.remove;
+				this.apiAction = MethodActionEnum.remove;
+				break;
+
+			case 'put':
+				this.name = MethodEnum.update;
+				this.apiAction = MethodActionEnum.update;
+				break;
+
+			default:
+				break;
+		}
 	}
 
 }

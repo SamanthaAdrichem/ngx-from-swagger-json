@@ -1,5 +1,6 @@
 import * as path            from 'path';
 import * as process         from 'process';
+import {LibFile}            from '../lib/file';
 import {LibString}          from '../lib/string';
 import {DefinitionTypeEnum} from '../models/swagger/definition-type.enum';
 import {DefinitionModel}    from '../models/swagger/definition.model';
@@ -62,10 +63,10 @@ export class Definition {
 		if (!this.angularName) {
 			return null;
 		}
-		return "import {" + this.getModelName() + "} from '" + relativePath + '/' + (this.getModelFileName() || '').replace('.ts', '') + "';";
+		return "import {" + this.getModelName() + "} from '" + relativePath + '/' + (this.getModelFilename() || '').replace('.ts', '') + "';";
 	}
 
-	public getModelFileName(): string|null {
+	public getModelFilename(): string|null {
 		if (!this.swaggerName) {
 			return null
 		}
@@ -85,9 +86,9 @@ export class Definition {
 		}
 
 		const modelName: string = this.getModelName() || '';
-		const modelFileName: string = this.getModelFileName() || '';
+		const modelFilename: string = this.getModelFilename() || '';
 		const generatedModelName: string = modelName + 'Generated';
-		const generatedModelFileName: string = modelFileName.replace('.model.ts', '.model.generated.ts');
+		const generatedModelFilename: string = modelFilename.replace('.model.ts', '.model.generated.ts');
 		const imports: {[key: string]: string} = {};
 
 		if (!modelName) {
@@ -106,14 +107,14 @@ export class Definition {
 			}
 			const field: DefinitionField = this.fields[fieldName];
 			const fieldModelName: string|null = field.getModelName();
-			const fieldModelFileName: string|null = ((field.getModelFileName() || '').replace('.ts', '')) || null;
+			const fieldModelFilename: string|null = ((field.getModelFilename() || '').replace('.ts', '')) || null;
 			let fieldType: string|null = field.getType();
 			switch (fieldType) {
 				case FieldTypeEnum.enum:
 				case FieldTypeEnum.object:
 					field.export(exportDestination);
-					if (fieldModelName && fieldModelFileName) {
-						imports[fieldModelFileName] = "import {" + fieldModelName + "} from '" + relativePath + '/' + fieldModelFileName + "';"; // @todo path
+					if (fieldModelName && fieldModelFilename) {
+						imports[relativePath + '/' + fieldModelFilename] = fieldModelName;
 						fieldType = fieldModelName;
 					}
 					break;
@@ -121,8 +122,8 @@ export class Definition {
 				case FieldTypeEnum.array:
 					fieldType = field.getSubFieldType();
 					if (FieldTypeEnum.object === fieldType) {
-						if (fieldModelName && fieldModelFileName) {
-							imports[fieldModelFileName] = "import {" + fieldModelName + "} from '" + relativePath + '/' + fieldModelFileName + "';"; // @todo path
+						if (fieldModelName && fieldModelFilename) {
+							imports[relativePath + '/' + fieldModelFilename] = fieldModelName;
 							fieldType = fieldModelName
 						}
 					}
@@ -142,15 +143,14 @@ export class Definition {
 			"\n" +
 			"}\n";
 
-		if (Object.keys(imports).length > 0) {
-			generatedFileContents = Object.values(imports).join("\n") + "\n\n" + generatedFileContents;
-		}
+		generatedFileContents = LibFile.generateImportStatements(imports) + generatedFileContents;
 
 		const definitionFileContents: string = "" +
-			"import {" + generatedModelName + "} from '" + relativePath + '/' + generatedModelFileName.replace('.ts', '') + "';\n\n" +
+			"import {" + generatedModelName + "} from '" + relativePath + '/' + generatedModelFilename.replace('.ts', '') + "';\n\n" +
 			"export class " + modelName + " extends " + generatedModelName + " {}\n";
 
-		console.log('definition', generatedFileContents, definitionFileContents);
+		console.log("OUTPUT: generated definition", "\n" + generatedFileContents);
+		console.log("OUTPUT: definition", "\n" + definitionFileContents);
 
 		// fs.writeFile(generatedModelFilename, generatedOutputModel, function(err){
 		// 	if (err) {
@@ -159,7 +159,7 @@ export class Definition {
 		// 	console.log('Generated: ' + generatedModelFilename);
 		// });
 
-		// let modelFilename = __dirname + '/../' + outputDir + '/' + getModelFileName(definitionName, true);
+		// let modelFilename = __dirname + '/../' + outputDir + '/' + getModelFilename(definitionName, true);
 		// if (fs.existsSync(modelFilename)) {
 		// 	console.log('Skipped: ' + modelFilename);
 		// } else {

@@ -11,7 +11,7 @@ import {Service}      from './swagger/service';
 
 export class Parser {
 
-	readonly fallbackDestinationDir: string = './__ngx-from-swagger-json/';
+	private readonly fallbackDestinationDir: string = './__ngx-from-swagger-json/';
 
 	constructor(
 		private logger: Logger,
@@ -108,6 +108,7 @@ export class Parser {
 		const exportDestination: string = path.resolve(process.cwd() + '/' + this.config.destinationDir || this.fallbackDestinationDir);
 		const services: {[key: string]:Service} = Storage.getServices();
 		services['/publishers/phonenumbers'].export(exportDestination);
+		// services['/publishers/programs'].export(exportDestination);
 		process.exit(1);
 		for (const servicePath in services) {
 			if (!services.hasOwnProperty(servicePath)) {

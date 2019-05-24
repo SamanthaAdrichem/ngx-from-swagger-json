@@ -149,14 +149,14 @@ export class DefinitionField {
 		return null;
 	}
 
-	public getModelFileName(): string|null {
+	public getModelFilename(): string|null {
 		if (this.enumValues) {
-			return this.getEnumFileName();
+			return this.getEnumFilename();
 		}
 		if (this.subFieldRef) {
 			const refDefinition: Definition|null = Storage.getDefinition(this.subFieldRef);
 			if (refDefinition) {
-				return refDefinition.getModelFileName();
+				return refDefinition.getModelFilename();
 			}
 		}
 		return null;
@@ -166,7 +166,7 @@ export class DefinitionField {
 		return LibString.upperCamelCaseName(this.name) + 'Enum';
 	}
 
-	public getEnumFileName(): string {
+	public getEnumFilename(): string {
 		return LibString.dashCaseName(this.name) + '.enum.ts';
 	}
 

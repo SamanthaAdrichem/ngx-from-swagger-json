@@ -1,14 +1,19 @@
-import {Definition}       from './definition';
+import {ParameterInEnum}  from '../models/swagger/parameter-in.enum';
 import {ParameterModel}   from '../models/swagger/parameter.model';
 import {PropertyTypeEnum} from '../models/swagger/property-type.enum';
 import {SchemaTypeEnum}   from '../models/swagger/schema-type.enum';
 import {Storage}          from '../storage';
+import {Definition}       from './definition';
 import {FieldTypeEnum}    from './field-type.enum';
 
 export class Parameter {
 
 	public static fromSwagger(paramName: string, paramModel: ParameterModel): Parameter {
-		const parameter: Parameter = new Parameter(paramName || paramModel.name || '', paramModel.name || paramName);
+		const parameter: Parameter = new Parameter(
+			paramModel.in || null,
+			paramName || paramModel.name || '',
+			paramModel.name || paramName
+		);
 		if (paramModel.$ref) {
 			parameter.paramRef = paramModel.$ref;
 		} else {
@@ -22,9 +27,32 @@ export class Parameter {
 	private type?: FieldTypeEnum|null;
 
 	constructor(
+		private paramSource: ParameterInEnum|null,
 		public swaggerName: string,
 		public name: string
 	) {}
+
+	public getSource(): ParameterInEnum|null {
+		if (this.paramRef) {
+			const param: Parameter|null = Storage.getParameter(this.paramRef);
+			if (param) {
+				return param.getSource();
+			}
+		}
+		if (this.schemaRef) {
+			const definition: Definition|null = Storage.getDefinition(this.schemaRef);
+			if (definition) {
+				const modelName: string|null = definition.getModelName();
+				if (modelName) {
+					return ParameterInEnum.query;
+				}
+			}
+		}
+		if (this.paramSource) {
+			return this.paramSource;
+		}
+		return null;
+	}
 
 	public getName(): string {
 		if (this.paramRef) {

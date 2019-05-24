@@ -27,6 +27,10 @@ export class Response {
 		this.type = type;
 	}
 
+	public getType(): FieldTypeEnum|null {
+		return this.type || null;
+	}
+
 	public setRef(ref: string) {
 		this.ref = ref;
 	}
@@ -39,12 +43,12 @@ export class Response {
 		return definition.getModelName();
 	}
 
-	public getImportStatement(rootExportDestination: string): string|null {
+	public getModelFilename(): string|null {
 		const definition: Definition|null = Storage.getDefinition(this.ref || '');
 		if (!definition) {
 			return null;
 		}
-		return definition.getImportStatement(rootExportDestination);
+		return definition.getModelFilename();
 	}
 
 	public export(exportDestination: string): void {

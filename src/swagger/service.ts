@@ -1,11 +1,11 @@
-import * as fs      from 'fs';
-import * as path    from 'path';
-import * as process from "process";
-import {LibArray}   from '../lib/array';
-import {LibString}  from '../lib/string';
-import {PathModel}  from '../models/swagger/path.model';
-import {Method}     from './method';
-import {Parameter}  from './parameter';
+import * as fs         from 'fs';
+import * as path       from 'path';
+import {LibFile}       from '../lib/file';
+import {LibString}     from '../lib/string';
+import {PathModel}     from '../models/swagger/path.model';
+import {FieldTypeEnum} from './field-type.enum';
+import {Method}        from './method';
+import {Parameter}     from './parameter';
 
 export class Service {
 
@@ -90,7 +90,8 @@ export class Service {
 
 	public addMethod(method: Method) {
 		if (null === method.name) {
-			return; // @todo maybe skip it?
+			console.error('Method without an action: ', method);
+			return;
 		}
 		this.methods[method.name] = method;
 	}
@@ -156,7 +157,7 @@ export class Service {
 		return LibString.upperCamelCaseName(serviceName) + 'Service';
 	}
 
-	public getServiceFileName(): string|null {
+	public getServiceFilename(): string|null {
 		if (!this.servicePath) {
 			return null;
 		}
@@ -169,7 +170,7 @@ export class Service {
 
 	public export(rootExportDestination: string): void {
 		const serviceName: string|null = this.getServiceName();
-		const serviceFilename: string|null = this.getServiceFileName();
+		const serviceFilename: string|null = this.getServiceFilename();
 		if (null === serviceName || null === serviceFilename) {
 			console.warn('Could not export empty service', this);
 			return;
@@ -177,17 +178,6 @@ export class Service {
 
 		const serviceDirectory: string = this.getServiceDirectory() || '';
 		const fullServiceDirectory: string = rootExportDestination + serviceDirectory;
-		let relativePath: string = fullServiceDirectory.replace(path.resolve(process.cwd()), '');
-		if (path.sep === '\\') {
-			relativePath = relativePath.replace(/\\/g, '/');
-		}
-		if (relativePath.substr(0, 1) === '/') {
-			relativePath = relativePath.substr(1);
-		}
-		if (relativePath.substr(-1) === '/') {
-			relativePath = relativePath.substr(0, relativePath.length - 1);
-		}
-
 
 		// const serviceDirectory =
 		// console.log(this, serviceName, serviceDirectory, path.resolve(rootExportDestination + '/' + serviceDirectory));
@@ -202,11 +192,6 @@ export class Service {
 
 		const imports: {[key: string]:string} = {};
 		let fileContents: string = '';
-		const pathParams: string[] = [];
-		this.pathParams.map((parameter: Parameter) => {
-			pathParams.push(LibString.camelCaseName(parameter.getName()) + ': ' + parameter.getType());
-		});
-
 		fileContents += "" +
 			"@Injectable()\n" +
 			"export class " + serviceName + " {\n" +
@@ -216,189 +201,112 @@ export class Service {
 			"\t) {}\n" +
 			"\n";
 
-// @todo response model array!
-// @todo fix all import statements
+		if (this.methods.create) {
+			fileContents += this.generateMethod(this.methods.create, fullServiceDirectory, imports);
+		}
 
 		if (this.methods.get) {
-			const method: Method = this.methods.get;
-			let hasFilter: boolean = false;
-			let requestParams: string = pathParams.join(', ');
-			if (method.exportFilter(serviceName, serviceFilename, fullServiceDirectory)) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'filter: ' + method.getFilterName(serviceName);
-				const filterImportPath: string|null = method.getFilterFileName(serviceFilename || '').replace('.ts', '');
-				if (filterImportPath) {
-					imports[filterImportPath] = "import {" + method.getFilterName(serviceName) + "} from '" + relativePath + '/' + filterImportPath + "';";
-				}
-				hasFilter = true;
-			}
-			let responseModel: string = 'void';
-			if (method.response) {
-				responseModel = method.response.getModelName() || responseModel;
-				if ('void' !== responseModel) {
-					method.response.export(fullServiceDirectory);
-					// const importFileName: string|null = method.response.getImportStatement(fullServiceDirectory);
-					// if (null !== importFileName) {
-					// 	imports[importFileName] = importFileName;
-					// }
-				}
-			}
-			fileContents += "" +
-				"\tget(" + requestParams + "): Observable<" + responseModel + "> {\n" +
-				"\t\treturn this.httpClient.get<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + (hasFilter ? ',' : '') + "'\n" +
-				(hasFilter ? "\t\t\tfilter || {}\n" : "") +
-				"\t\t);\n" +
-				"\t)\n" +
-				"\n";
+			fileContents += this.generateMethod(this.methods.get, fullServiceDirectory, imports);
 		}
 
-		if (this.methods.getById && this.idParam) {
-			const method: Method = this.methods.getById;
-
-			let requestParams: string = pathParams.join(', ');
-			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
-			if (idParamName) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
-			}
-
-			let responseModel: string = 'void';
-			if (method.response) {
-				responseModel = method.response.getModelName() || responseModel;
-				if ('void' !== responseModel) {
-					method.response.export(fullServiceDirectory);
-					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
-					// if (null !== importStatement) {
-					// 	imports.push(importStatement);
-					// }
-				}
-			}
-
-			fileContents += "" +
-				"\tgetById(" + requestParams + "): Observable<" + responseModel + "> {\n" +
-				"\t\treturn this.httpClient.get<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + "/' + " + idParamName + "\n" +
-				"\t\t);\n" +
-				"\t)\n" +
-				"\n";
+		if (this.methods.getById) {
+			fileContents += this.generateMethod(this.methods.getById, fullServiceDirectory, imports);
 		}
 
-		if (this.methods.create) {
-			const method: Method = this.methods.create;
-
-			let requestParams: string = pathParams.join(', ');
-			if (method.exportBody(fullServiceDirectory)) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
-				// const bodyImportStatement: string|null = method.getBodyImportStatement(fullServiceDirectory);
-				// if (bodyImportStatement) {
-				// 	imports.push(bodyImportStatement);
-				// }
-			}
-			let responseModel: string = 'void';
-			if (method.response) {
-				responseModel = method.response.getModelName() || responseModel;
-				if ('void' !== responseModel) {
-					method.response.export(fullServiceDirectory);
-					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
-					// if (null !== importStatement) {
-					// 	imports.push(importStatement);
-					// }
-				}
-			}
-
-			fileContents += "" +
-				"\tcreate(" + requestParams + "): Observable<" + responseModel + "> {\n" +
-				"\t\treturn this.httpClient.post<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + "',\n" +
-				"\t\t\tbody\n" +
-				"\t\t);\n" +
-				"\t)\n" +
-				"\n";
+		if (this.methods.update) {
+			fileContents += this.generateMethod(this.methods.update, fullServiceDirectory, imports);
 		}
 
-		if (this.methods.update && this.idParam) {
-			const method: Method = this.methods.update;
-
-			let requestParams: string = pathParams.join(', ');
-			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
-			if (idParamName) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
-			}
-
-			if (method.exportBody(fullServiceDirectory)) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
-				// const bodyImportStatement: string|null = method.getBodyImportStatement(fullServiceDirectory);
-				// if (bodyImportStatement) {
-				// 	imports.push(bodyImportStatement);
-				// }
-			}
-			let responseModel: string = 'void';
-			if (method.response) {
-				responseModel = method.response.getModelName() || responseModel;
-				if ('void' !== responseModel) {
-					method.response.export(fullServiceDirectory);
-					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
-					// if (null !== importStatement) {
-					// 	imports.push(importStatement);
-					// }
-				}
-			}
-
-			fileContents += "" +
-				"\tupdate(" + requestParams + "): Observable<" + responseModel + "> {\n" +
-				"\t\treturn this.httpClient.put<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + "/' + " + idParamName + ",\n" +
-				"\t\t\tbody\n" +
-				"\t\t);\n" +
-				"\t)\n" +
-				"\n";
-		}
-
-		if (this.methods.remove && this.idParam) {
-			const method: Method = this.methods.remove;
-
-			let requestParams: string = pathParams.join(', ');
-			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
-			if (idParamName) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
-			}
-
-			let responseModel: string = 'void';
-			if (method.response) {
-				responseModel = method.response.getModelName() || responseModel;
-				if ('void' !== responseModel) {
-					method.response.export(fullServiceDirectory);
-					// const importStatement: string|null = method.response.getImportStatement(fullServiceDirectory);
-					// if (null !== importStatement) {
-					// 	imports.push(importStatement);
-					// }
-				}
-			}
-
-			fileContents += "" +
-				"\tremove(" + requestParams + "): Observable<" + responseModel + "> {\n" +
-				"\t\treturn this.httpClient.delete<" + responseModel + ">(\n" +
-				"\t\t\t'" + this.apiPath + "/' + " + idParamName + "\n" +
-				"\t\t);\n" +
-				"\t)\n" +
-				"\n";
+		if (this.methods.remove) {
+			fileContents += this.generateMethod(this.methods.remove, fullServiceDirectory, imports);
 		}
 
 		fileContents += "" +
 			"}\n";
 
-		const importKeys: string[] = Object.keys(imports).sort();
-		if (importKeys.length > 0) {
-			const importsSorted: string[] = [];
-			for (const importName of importKeys) {
-				importsSorted.push(imports[importName]);
-			}
-			fileContents = LibArray.distinct(importsSorted).join("\n") + "\n\n" + fileContents
-		}
+		fileContents = LibFile.generateImportStatements(imports) + fileContents;
 
-		console.log(fileContents, imports);
-
+		console.log("OUTPUT: Service", "\n" + fileContents);
 
 	}
 
+	private getMethodResponseModel(method: Method, fullServiceDirectory: string, imports: {[key: string]:string}): string {
+		let responseModel: string = 'void';
+		if (method.response) {
+			responseModel = method.response.getModelName() || responseModel;
+			if ('void' !== responseModel) {
+				// @todo
+				console.log('ERR: ', method.response.getType());
+				if (method.response.getType() === FieldTypeEnum.array) {
+					responseModel += '[]';
+				}
+				method.response.export(fullServiceDirectory);
+				const importPath: string|null = method.response.getModelFilename();
+				if (null !== importPath) {
+					imports[importPath] = method.response.getModelName() || '';
+				}
+			}
+		}
+		return responseModel;
+	}
 
+	private getPathParams() {
+		const pathParams: string[] = [];
+		this.pathParams.map((parameter: Parameter) => {
+			pathParams.push(LibString.camelCaseName(parameter.getName()) + ': ' + parameter.getType());
+		});
+		return pathParams.join(', ');
+	}
+
+	private generateMethod(method: Method, fullServiceDirectory: string, imports: {[key: string]: string}): string {
+		if (!method.name) {
+			return '';
+		}
+
+		const serviceName: string = this.getServiceName() || '';
+		const serviceFilename: string = this.getServiceFilename() || '';
+
+		let requestParams: string = this.getPathParams();
+		let hasBody: boolean = false;
+		let hasFilter: boolean = false;
+		let apiPath: string = "'" + this.apiPath + "'";
+
+		if (this.idParam && method.isIdAction()) {
+			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
+			if (idParamName) {
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ": " + this.idParam.getType();
+				apiPath = apiPath.substr(0, apiPath.length - 1) + "/' + " + idParamName;
+			}
+		}
+
+		if (method.exportBody(fullServiceDirectory)) {
+			hasBody = true;
+			requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
+			const bodyImportStatement: string|null = method.getBodyImportStatement(fullServiceDirectory);
+			if (bodyImportStatement) {
+				// @todo
+			// 	imports.push(bodyImportStatement);
+			}
+		} else if (method.exportFilter(method.name, serviceName, serviceFilename, fullServiceDirectory)) {
+			hasFilter = true;
+
+			const filterName: string = method.getFilterName(method.name, serviceName);
+			requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'filter: ' + filterName;
+			const filterImportPath: string|null = method.getFilterFilename(method.name,serviceFilename || '').replace('.ts', '');
+			if (filterImportPath) {
+				imports[filterImportPath] = filterName;
+			}
+		}
+
+		const responseModel: string = this.getMethodResponseModel(method, fullServiceDirectory, imports);
+		return "" +
+			"\t" + method.name + "(" + requestParams + "): Observable<" + responseModel + "> {\n" +
+			"\t\treturn this.httpClient." + method.apiAction + "<" + responseModel + ">(\n" +
+			"\t\t\t" + apiPath + (hasFilter || hasBody ? ',' : '') + "\n" +
+			(hasBody ? "\t\t\tbody\n" : "") +
+			(hasFilter ? "\t\t\tfilter\n" : "") +
+			"\t\t);\n" +
+			"\t)\n" +
+			"\n";
+	}
 }
