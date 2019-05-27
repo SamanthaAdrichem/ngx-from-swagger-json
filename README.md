@@ -4,9 +4,9 @@ This packages allows you to generated services and their models from a swagger.j
 
 # Installation
 
-Yarn: Run `yarn add -D @aiwha/ngx-from-swagger-json`
+Yarn: Run `yarn global add @aiwha/ngx-from-swagger-json`
 
-NPM:  Run `yarn install --dev @aiwha/ngx-from-swagger-json`
+NPM:  Run `npm install -g @aiwha/ngx-from-swagger-json`
 
 # Configuration
 
