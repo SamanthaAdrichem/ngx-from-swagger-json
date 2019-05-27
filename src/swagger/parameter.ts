@@ -76,17 +76,17 @@ export class Parameter {
 		return '';
 	}
 
-	public getImportStatement(exportDestination: string): string|null {
+	public getModelFilename(): string|null {
 		if (this.paramRef) {
 			const param: Parameter|null = Storage.getParameter(this.paramRef);
 			if (param) {
-				return param.getImportStatement(exportDestination);
+				return param.getModelFilename();
 			}
 		}
 		if (this.schemaRef) {
 			const definition: Definition|null = Storage.getDefinition(this.schemaRef);
 			if (definition) {
-				return definition.getImportStatement(exportDestination);
+				return definition.getModelFilename();
 			}
 		}
 		return null;

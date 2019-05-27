@@ -1,6 +1,6 @@
-import * as path          from "path";
-import * as process       from "process";
+import {LibFile}          from '../lib/file';
 import {LibString}        from '../lib/string';
+import {Logger}           from '../logger';
 import {MethodModel}      from '../models/swagger/method.model';
 import {ParameterInEnum}  from '../models/swagger/parameter-in.enum';
 import {ParameterModel}   from '../models/swagger/parameter.model';
@@ -74,20 +74,9 @@ export class Method {
 			return false;
 		}
 
-		let relativePath: string = exportDestination.replace(path.resolve(process.cwd()), '');
-		if (path.sep === '\\') {
-			relativePath = relativePath.replace(/\\/g, '/');
-		}
-		if (relativePath.substr(0, 1) === '/') {
-			relativePath = relativePath.substr(1);
-		}
-		if (relativePath.substr(-1) === '/') {
-			relativePath = relativePath.substr(0, relativePath.length - 1);
-		}
-
 		const modelName: string = this.getFilterName(methodName, serviceName);
 		const modelFilename: string = this.getFilterFilename(methodName, serviceFilename);
-		const imports: {[key: string]: string} = {};
+		const imports: {[key: string]: string[]} = {};
 
 		let fileContents: string = "" +
 			"export class " + modelName + " {\n" +
@@ -116,10 +105,11 @@ export class Method {
 			"}\n";
 
 		if (Object.keys(imports).length > 0) {
-			fileContents = Object.values(imports).join("\n") + "\n\n" + fileContents;
+			fileContents = LibFile.generateImportStatements(imports) + fileContents;
 		}
 
-		console.log('OUTPUT: filter', "\n" + fileContents);
+		Logger.log('Generated filter model: ' + modelName);
+		LibFile.writeFile(exportDestination + '/' + modelFilename, fileContents, true);
 
 		return true;
 	}
@@ -162,13 +152,13 @@ export class Method {
 		return null;
 	}
 
-	public getBodyImportStatement(exportDestination: string): string|null {
+	public getBodyModelFilename(): string|null {
 		for (const param in this.parameters) {
 			if (!this.parameters.hasOwnProperty(param)) {
 				continue;
 			}
 			if (this.parameters[param].swaggerName === 'body') {
-				return this.parameters[param].getImportStatement(exportDestination);
+				return this.parameters[param].getModelFilename();
 			}
 		}
 		return null;

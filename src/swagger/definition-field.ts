@@ -1,4 +1,6 @@
+import {LibFile}          from '../lib/file';
 import {LibString}        from '../lib/string';
+import {Logger}           from '../logger';
 import {PropertyTypeEnum} from '../models/swagger/property-type.enum';
 import {PropertyModel}    from '../models/swagger/property.model';
 import {Storage}          from '../storage';
@@ -176,8 +178,46 @@ export class DefinitionField {
 
 	public export(exportDestination: string): void {
 		if (this.enumValues) {
-			// export enum
+			exportDestination = LibFile.removeOuterSlashes(exportDestination);
+			const enumName: string = this.getEnumName() || '';
+			const enumFilename: string = this.getEnumFilename() || '';
+
+			if (!enumName) {
+				return;
+			}
+
+			let maxEnumLength: number = 0;
+			for (const enumValue of this.enumValues) {
+				let enumLength: number = enumValue.toString().length;
+				if (typeof enumValue === 'number' || !isNaN(parseInt(enumValue.substr(0, 1), 10))) {
+					enumLength += 2;
+				}
+				maxEnumLength = enumLength > maxEnumLength ? enumLength : maxEnumLength;
+			}
+
+			const enumValues: string[] = [];
+			for (const enumValue of this.enumValues) {
+				if (typeof enumValue === 'number') {
+					enumValues.push(("'" + enumValue.toString() + "'").padEnd(maxEnumLength, ' ') + " = " + enumValue);
+					continue;
+				}
+
+				if (!isNaN(parseInt(enumValue.substr(0, 1), 10))) {
+					enumValues.push(("'" + enumValue.toString().toUpperCase() + "'").padEnd(maxEnumLength, ' ') + " = '" + enumValue + "'");
+					continue;
+				}
+				enumValues.push(enumValue.toString().toUpperCase().padEnd(maxEnumLength, ' ') + " = '" + enumValue + "'");
+			}
+
+			const fileContents: string = "" +
+				"export enum " + enumName + " {\n" +
+				"\t" + enumValues.join(",\n\t") + "\n" +
+				"}\n";
+			Logger.log('Generated enum model: ' + enumName);
+			Logger.log(fileContents);
+			LibFile.writeFile(exportDestination + '/' + enumFilename, fileContents, true);
 		}
+
 		if (this.subFieldRef) {
 			const refDefinition: Definition|null = Storage.getDefinition(this.subFieldRef);
 			if (refDefinition) {

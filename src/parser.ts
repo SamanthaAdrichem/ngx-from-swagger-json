@@ -1,8 +1,5 @@
 import {get}          from 'https';
-import * as path      from 'path';
-import * as process   from "process";
-import {ConfigModel}  from './config/config.model';
-import {Logger}       from './logger';
+import * as process   from 'process';
 import {SwaggerModel} from './models/swagger.model';
 import {Storage}      from './storage';
 import {Definition}   from './swagger/definition';
@@ -11,29 +8,21 @@ import {Service}      from './swagger/service';
 
 export class Parser {
 
-	private readonly fallbackDestinationDir: string = './__ngx-from-swagger-json/';
-
-	constructor(
-		private logger: Logger,
-		private config: ConfigModel
-	) {}
-
 	public parse() {
-		if (!this.config.hostname) {
+		if (!Storage.config.hostname) {
 			console.error('Hostname is missing in config');
 			return process.exit(1);
 		}
 
-		if (!this.config.folders || this.config.folders.length === 0) {
+		if (!Storage.config.folders || Storage.config.folders.length === 0) {
 			console.error('Folders missing in config');
 			return process.exit(1);
 		}
-		this.config.folders.map((folder: string) => this.fetchJsonFile(folder));
-
+		Storage.config.folders.map((folder: string) => this.fetchJsonFile(folder));
 	}
 
 	private fetchJsonFile(folder: string) {
-		const requestUrl: string = 'https://' + this.config.hostname + '/' + folder + '/api/swagger.json';
+		const requestUrl: string = 'https://' + Storage.config.hostname + '/' + folder + '/api/swagger.json';
 		try {
 			get(requestUrl, (res) => {
 				let dataBuffer: string = '';
@@ -105,16 +94,12 @@ export class Parser {
 	}
 
 	private generateServices() {
-		const exportDestination: string = path.resolve(process.cwd() + '/' + this.config.destinationDir || this.fallbackDestinationDir);
 		const services: {[key: string]:Service} = Storage.getServices();
-		services['/publishers/phonenumbers'].export(exportDestination);
-		// services['/publishers/programs'].export(exportDestination);
-		process.exit(1);
 		for (const servicePath in services) {
 			if (!services.hasOwnProperty(servicePath)) {
 				continue;
 			}
-			services[servicePath].export(exportDestination);
+			services[servicePath].export();
 			process.exit(1);
 		}
 	}

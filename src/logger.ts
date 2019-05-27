@@ -1,13 +1,11 @@
 export class Logger {
-	private verbose: boolean = false;
 
-	constructor(verbose: boolean) {
-		this.verbose = verbose;
-	}
+	public static verbose: boolean = false;
 
-	public log(message: string) {
-		if (this.verbose) {
+	public static log(message: string) {
+		if (Logger.verbose) {
 			console.log(message);
 		}
 	}
+
 }

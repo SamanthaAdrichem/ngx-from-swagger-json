@@ -1,7 +1,6 @@
-import * as path            from 'path';
-import * as process         from 'process';
 import {LibFile}            from '../lib/file';
 import {LibString}          from '../lib/string';
+import {Logger}             from '../logger';
 import {DefinitionTypeEnum} from '../models/swagger/definition-type.enum';
 import {DefinitionModel}    from '../models/swagger/definition.model';
 import {DefinitionField}    from './definition-field';
@@ -49,23 +48,6 @@ export class Definition {
 		return this.angularName + 'Model';
 	}
 
-	public getImportStatement(importPath: string): string|null {
-		let relativePath: string = importPath.replace(path.resolve(process.cwd()), '');
-		if (path.sep === '\\') {
-			relativePath = relativePath.replace(/\\/g, '/');
-		}
-		if (relativePath.substr(0, 1) === '/') {
-			relativePath = relativePath.substr(1);
-		}
-		if (relativePath.substr(-1) === '/') {
-			relativePath = relativePath.substr(0, relativePath.length - 1);
-		}
-		if (!this.angularName) {
-			return null;
-		}
-		return "import {" + this.getModelName() + "} from '" + relativePath + '/' + (this.getModelFilename() || '').replace('.ts', '') + "';";
-	}
-
 	public getModelFilename(): string|null {
 		if (!this.swaggerName) {
 			return null
@@ -74,22 +56,12 @@ export class Definition {
 	}
 
 	public export(exportDestination: string) {
-		let relativePath: string = exportDestination.replace(path.resolve(process.cwd()), '');
-		if (path.sep === '\\') {
-			relativePath = relativePath.replace(/\\/g, '/');
-		}
-		if (relativePath.substr(0, 1) === '/') {
-			relativePath = relativePath.substr(1);
-		}
-		if (relativePath.substr(-1) === '/') {
-			relativePath = relativePath.substr(0, relativePath.length - 1);
-		}
-
+		exportDestination = LibFile.removeOuterSlashes(exportDestination);
 		const modelName: string = this.getModelName() || '';
 		const modelFilename: string = this.getModelFilename() || '';
 		const generatedModelName: string = modelName + 'Generated';
 		const generatedModelFilename: string = modelFilename.replace('.model.ts', '.model.generated.ts');
-		const imports: {[key: string]: string} = {};
+		const imports: {[key: string]: string[]} = {};
 
 		if (!modelName) {
 			return;
@@ -114,7 +86,10 @@ export class Definition {
 				case FieldTypeEnum.object:
 					field.export(exportDestination);
 					if (fieldModelName && fieldModelFilename) {
-						imports[relativePath + '/' + fieldModelFilename] = fieldModelName;
+						if (!imports[exportDestination + '/' + fieldModelFilename]) {
+							imports[exportDestination + '/' + fieldModelFilename] = [];
+						}
+						imports[exportDestination + '/' + fieldModelFilename].push(fieldModelName);
 						fieldType = fieldModelName;
 					}
 					break;
@@ -123,7 +98,10 @@ export class Definition {
 					fieldType = field.getSubFieldType();
 					if (FieldTypeEnum.object === fieldType) {
 						if (fieldModelName && fieldModelFilename) {
-							imports[relativePath + '/' + fieldModelFilename] = fieldModelName;
+							if (!imports[exportDestination + '/' + fieldModelFilename]) {
+								imports[exportDestination + '/' + fieldModelFilename] = [];
+							}
+							imports[exportDestination + '/' + fieldModelFilename].push(fieldModelName);
 							fieldType = fieldModelName
 						}
 					}
@@ -131,7 +109,7 @@ export class Definition {
 					break;
 			}
 			if (fieldType) {
-				generatedFileContents += "\t" + fieldName + (!field.isRequired() ? '?' : '') + ": " + fieldType + ";\n";
+				generatedFileContents += "\tpublic " + fieldName + (!field.isRequired() ? '?' : '') + ': ' + fieldType + ";\n";
 			}
 		}
 
@@ -146,30 +124,16 @@ export class Definition {
 		generatedFileContents = LibFile.generateImportStatements(imports) + generatedFileContents;
 
 		const definitionFileContents: string = "" +
-			"import {" + generatedModelName + "} from '" + relativePath + '/' + generatedModelFilename.replace('.ts', '') + "';\n\n" +
+			"import {" + generatedModelName + "} from '" + exportDestination + '/' + generatedModelFilename.replace('.ts', '') + "';\n\n" +
 			"export class " + modelName + " extends " + generatedModelName + " {}\n";
 
-		console.log("OUTPUT: generated definition", "\n" + generatedFileContents);
-		console.log("OUTPUT: definition", "\n" + definitionFileContents);
+		Logger.log('Generated definitionGenerated model: ' + generatedModelName);
+		// Logger.log(generatedFileContents);
+		LibFile.writeFile(exportDestination + '/' + generatedModelFilename, generatedFileContents, true);
 
-		// fs.writeFile(generatedModelFilename, generatedOutputModel, function(err){
-		// 	if (err) {
-		// 		console.log(err);
-		// 	}
-		// 	console.log('Generated: ' + generatedModelFilename);
-		// });
-
-		// let modelFilename = __dirname + '/../' + outputDir + '/' + getModelFilename(definitionName, true);
-		// if (fs.existsSync(modelFilename)) {
-		// 	console.log('Skipped: ' + modelFilename);
-		// } else {
-		// 	fs.writeFile( modelFilename, outputModel, function ( err ) {
-		// 		if ( err ) {
-		// 			console.log( err );
-		// 		}
-		// 		console.log( 'Generated: ' + modelFilename );
-		// 	} );
-		// }
+		Logger.log('Generated definitionExtend model: ' + modelName);
+		// Logger.log(definitionFileContents);
+		LibFile.writeFile(exportDestination + '/' + modelFilename, definitionFileContents);
 	}
 
 	public getFields(): {[key: string]: DefinitionField} {

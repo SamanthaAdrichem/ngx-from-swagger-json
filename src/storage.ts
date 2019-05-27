@@ -1,11 +1,13 @@
-import {Definition} from './swagger/definition';
-import {Parameter}  from './swagger/parameter';
-import {Service}    from './swagger/service';
+import {ConfigModel} from './config/config.model';
+import {Definition}  from './swagger/definition';
+import {Parameter}   from './swagger/parameter';
+import {Service}     from './swagger/service';
 
 export class Storage {
 	public static parameters: {[key: string]:Parameter} = {};
 	public static services: {[key: string]:Service} = {};
 	public static definitions: {[key: string]: Definition} = {};
+	public static config: ConfigModel;
 
 	public static addDefinition(definition: Definition) {
 		this.definitions[definition.swaggerName] = definition;

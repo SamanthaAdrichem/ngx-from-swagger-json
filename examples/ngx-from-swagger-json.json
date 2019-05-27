@@ -1,0 +1,8 @@
+{
+	"hostname": "example.com",
+	"folders": [
+		"docs"
+	],
+	"destinationDir": "services",
+	"ignoreTls": "false"
+}
