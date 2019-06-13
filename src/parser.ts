@@ -21,7 +21,7 @@ export class Parser {
 
 	private fetchJsonFile(location: string): Promise<void> {
 		return new Promise((resolve, reject) => {
-			const requestUrl: string = location + '/api/swagger.json';
+			const requestUrl: string = location + (location.endsWith('swagger.json') ? '' : '/api/swagger.json');
 			try {
 				get(requestUrl, (res) => {
 					let dataBuffer: string = '';
