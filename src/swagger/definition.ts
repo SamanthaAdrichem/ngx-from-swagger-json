@@ -121,7 +121,10 @@ export class Definition {
 			"\n" +
 			"}\n";
 
-		generatedFileContents = LibFile.generateImportStatements(imports) + generatedFileContents;
+		generatedFileContents = "" +
+			"// tslint:disable:variable-name\n" +
+			"\n" +
+			LibFile.generateImportStatements(imports) + generatedFileContents;
 
 		const definitionFileContents: string = "" +
 			"import {" + generatedModelName + "} from '" + exportDestination + '/' + generatedModelFilename.replace('.ts', '') + "';\n\n" +

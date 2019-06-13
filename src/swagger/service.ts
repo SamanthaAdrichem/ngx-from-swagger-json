@@ -1,4 +1,5 @@
 import {LibFile}       from '../lib/file';
+import {LibObject}     from '../lib/object';
 import {LibString}     from '../lib/string';
 import {PathModel}     from '../models/swagger/path.model';
 import {Storage}       from '../storage';
@@ -106,7 +107,6 @@ export class Service {
 
 	public setServicePath(servicePath: string): void {
 		this.servicePath = servicePath;
-		this.setServiceDirectory();
 	}
 
 	public setApiPath(apiPath: string): void {
@@ -119,12 +119,6 @@ export class Service {
 
 	public getServicePath(): string {
 		return this.servicePath;
-	}
-
-	public setServiceDirectory(): void {
-		// const serviceDirectory: string[] = this.servicePath.split('/');
-		// serviceDirectory.pop();
-		this.serviceDirectory = LibFile.removeOuterSlashes(Storage.config.getDestinationDir()) + '/' + LibFile.removeOuterSlashes(this.servicePath);
 	}
 
 	public getServiceDirectory(): string {
@@ -173,6 +167,7 @@ export class Service {
 			console.warn('Could not export empty service', this);
 			return;
 		}
+		this.setServiceDirectory();
 
 		const imports: {[key: string]:string[]} = {
 			'@angular/common/http': ['HttpClient'],
@@ -218,6 +213,18 @@ export class Service {
 
 	}
 
+	private setServiceDirectory(): void {
+		// const serviceDirectory: string[] = this.servicePath.split('/');
+		// serviceDirectory.pop();
+		let servicePath: string = this.servicePath;
+		if (Storage.skipPath !== '') {
+			if (servicePath.startsWith(Storage.skipPath)) {
+				servicePath = servicePath.substr(Storage.skipPath.length + 1);
+			}
+		}
+		this.serviceDirectory = LibFile.removeOuterSlashes(LibFile.removeOuterSlashes(Storage.config.getDestinationDir()) + '/' + LibFile.removeOuterSlashes(servicePath));
+	}
+
 	private getMethodResponseModel(method: Method, imports: {[key: string]:string[]}): string {
 		let responseModel: string = 'void';
 		if (method.response) {
@@ -227,13 +234,9 @@ export class Service {
 					responseModel += '[]';
 				}
 				method.response.export(this.getServiceDirectory());
-				let importPath: string|null = method.response.getModelFilename();
+				const importPath: string|null = method.response.getModelFilename();
 				if (null !== importPath) {
-					importPath = this.getServiceDirectory() + '/' + importPath;
-					if (!imports[importPath]) {
-						imports[importPath] = [];
-					}
-					imports[importPath].push(method.response.getModelName() || '');
+					LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + importPath, method.response.getModelName() || '');
 				}
 			}
 		}
@@ -272,27 +275,24 @@ export class Service {
 		if (method.exportBody(this.getServiceDirectory())) {
 			hasBody = true;
 			requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
-			let bodyImportPath: string|null = method.getBodyModelFilename();
+			const bodyImportPath: string|null = method.getBodyModelFilename();
 			if (bodyImportPath) {
-				bodyImportPath = this.getServiceDirectory() + '/' + bodyImportPath;
-				if (!imports[bodyImportPath]) {
-					imports[bodyImportPath] = [method.getBodyName() || ''];
-				}
-				imports[bodyImportPath].push();
+				LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + bodyImportPath, method.getBodyName() || '');
 			}
 		} else if (method.exportFilter(method.name, serviceName, serviceFilename, this.getServiceDirectory())) {
 			hasFilter = true;
 
 			const filterName: string = method.getFilterName(method.name, serviceName);
 			requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'filter: ' + filterName;
-			let filterImportPath: string|null = method.getFilterFilename(method.name,serviceFilename || '').replace('.ts', '');
+			const filterImportPath: string|null = method.getFilterFilename(method.name,serviceFilename || '').replace('.ts', '');
 			if (filterImportPath) {
-				filterImportPath = this.getServiceDirectory() + '/' + filterImportPath;
-				if (!imports[filterImportPath]) {
-					imports[filterImportPath] = [];
-				}
-				imports[filterImportPath].push(filterName);
+				LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + filterImportPath, filterName);
 			}
+		}
+
+		if (hasFilter) {
+			LibObject.addKeyedValue(imports, '@angular/common/http', 'HttpParams');
+			LibObject.addKeyedValue(imports, '@angular/common/http/src/params', 'HttpParamsOptions');
 		}
 
 		const responseModel: string = this.getMethodResponseModel(method, imports);
@@ -301,7 +301,7 @@ export class Service {
 			"\t\treturn this.httpClient." + method.apiAction + "<" + responseModel + ">(\n" +
 			"\t\t\t" + apiPath + (hasFilter || hasBody ? ',' : '') + "\n" +
 			(hasBody ? "\t\t\tbody\n" : "") +
-			(hasFilter ? "\t\t\tfilter\n" : "") +
+			(hasFilter ? "\t\t\t{params: new HttpParams(<HttpParamsOptions>{fromObject: filter as {}})}\n" : "") +
 			"\t\t);\n" +
 			"\t}\n" +
 			"\n";

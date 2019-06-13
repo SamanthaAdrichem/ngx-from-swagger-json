@@ -18,7 +18,7 @@ export class DefinitionField {
 	public fieldType?: FieldTypeEnum;
 	public subFieldType?: FieldTypeEnum;
 	public subFieldRef?: string;
-	public enumValues?: string[]|number[];
+	public enumValues?: string[]|number[]|boolean[];
 
 	constructor(name: string) {
 		this.name = this.safeName(name);
@@ -93,7 +93,6 @@ export class DefinitionField {
 				break;
 
 			default:
-				console.error('ERROR unknown :' + JSON.stringify(fieldModel));
 				this.fieldType = FieldTypeEnum.any;
 				break;
 		}
@@ -189,7 +188,7 @@ export class DefinitionField {
 			let maxEnumLength: number = 0;
 			for (const enumValue of this.enumValues) {
 				let enumLength: number = enumValue.toString().length;
-				if (typeof enumValue === 'number' || !isNaN(parseInt(enumValue.substr(0, 1), 10))) {
+				if (typeof enumValue !== 'boolean' && (typeof enumValue === 'number' || !isNaN(parseInt(enumValue.substr(0, 1), 10)))) {
 					enumLength += 2;
 				}
 				maxEnumLength = enumLength > maxEnumLength ? enumLength : maxEnumLength;
@@ -197,6 +196,15 @@ export class DefinitionField {
 
 			const enumValues: string[] = [];
 			for (const enumValue of this.enumValues) {
+				if (typeof enumValue === 'boolean') {
+					if (enumValue) {
+						enumValues.push("TRUE".padEnd(maxEnumLength, ' ') + " = true");
+					} else {
+						enumValues.push("FALSE".padEnd(maxEnumLength, ' ') + " = false");
+					}
+					continue;
+				}
+
 				if (typeof enumValue === 'number') {
 					enumValues.push(("'" + enumValue.toString() + "'").padEnd(maxEnumLength, ' ') + " = " + enumValue);
 					continue;

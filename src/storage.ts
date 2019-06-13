@@ -4,10 +4,12 @@ import {Parameter}   from './swagger/parameter';
 import {Service}     from './swagger/service';
 
 export class Storage {
+	public static config: ConfigModel;
+	public static definitions: {[key: string]: Definition} = {};
 	public static parameters: {[key: string]:Parameter} = {};
 	public static services: {[key: string]:Service} = {};
-	public static definitions: {[key: string]: Definition} = {};
-	public static config: ConfigModel;
+	public static skipPath: string = '';
+
 
 	public static addDefinition(definition: Definition) {
 		this.definitions[definition.swaggerName] = definition;
@@ -35,5 +37,13 @@ export class Storage {
 
 	public static getServices(): {[key: string]:Service} {
 		return this.services;
+	}
+
+	public static clear() {
+		delete Storage.config;
+		Storage.definitions = {};
+		Storage.parameters = {};
+		Storage.services = {};
+		Storage.skipPath = '';
 	}
 }

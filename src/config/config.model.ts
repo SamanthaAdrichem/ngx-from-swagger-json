@@ -1,11 +1,10 @@
 export class ConfigModel {
 
-	public hostname: string = '';
-	public ignoreTls: boolean = false;
-	public folders: string[] = [
-		'docs',
-	];
 	public destinationDir: string = 'services';
+	public flatten: boolean = false;
+	public ignoreTls: boolean = false;
+	public location: string = '';
+	public moduleName: string|null = null;
 	private readonly fallbackDestinationDir: string = '__ngx-from-swagger-json-output';
 
 	constructor(config?: ConfigModel|null) {
