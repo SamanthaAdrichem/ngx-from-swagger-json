@@ -236,7 +236,7 @@ export class Service {
 				method.response.export(this.getServiceDirectory());
 				const importPath: string|null = method.response.getModelFilename();
 				if (null !== importPath) {
-					LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + importPath, method.response.getModelName() || '');
+					LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + importPath.replace('.ts', ''), method.response.getModelName() || '');
 				}
 			}
 		}
@@ -246,7 +246,7 @@ export class Service {
 	private getPathParams() {
 		const pathParams: string[] = [];
 		this.pathParams.map((parameter: Parameter) => {
-			pathParams.push(LibString.camelCaseName(parameter.getName()) + ': ' + parameter.getType());
+			pathParams.push(LibString.camelCaseName(parameter.getName()) + ': ' + parameter.getOutputType());
 		});
 		return pathParams.join(', ');
 	}
@@ -267,7 +267,7 @@ export class Service {
 		if (this.idParam && method.isIdAction()) {
 			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
 			if (idParamName) {
-				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ': ' + this.idParam.getType();
+				requestParams += (requestParams.length > 0 ? ', ' : ' ') + idParamName + ': ' + this.idParam.getOutputType();
 				apiPath = apiPath.substr(0, apiPath.length - 1) + "/' + " + idParamName;
 			}
 		}
@@ -277,7 +277,7 @@ export class Service {
 			requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'body: ' + method.getBodyName();
 			const bodyImportPath: string|null = method.getBodyModelFilename();
 			if (bodyImportPath) {
-				LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + bodyImportPath, method.getBodyName() || '');
+				LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + bodyImportPath.replace('.ts', ''), method.getBodyName() || '');
 			}
 		} else if (method.exportFilter(method.name, serviceName, serviceFilename, this.getServiceDirectory())) {
 			hasFilter = true;
@@ -286,7 +286,7 @@ export class Service {
 			requestParams += (requestParams.length > 0 ? ', ' : ' ') + 'filter: ' + filterName;
 			const filterImportPath: string|null = method.getFilterFilename(method.name,serviceFilename || '').replace('.ts', '');
 			if (filterImportPath) {
-				LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + filterImportPath, filterName);
+				LibObject.addKeyedValue(imports, this.getServiceDirectory() + '/' + filterImportPath.replace('.ts', ''), filterName);
 			}
 		}
 

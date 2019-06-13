@@ -96,7 +96,8 @@ export class Definition {
 
 				case FieldTypeEnum.array:
 					fieldType = field.getSubFieldType();
-					if (FieldTypeEnum.object === fieldType) {
+					if (FieldTypeEnum.object === fieldType || FieldTypeEnum.enum === fieldType) {
+						field.export(exportDestination);
 						if (fieldModelName && fieldModelFilename) {
 							if (!imports[exportDestination + '/' + fieldModelFilename]) {
 								imports[exportDestination + '/' + fieldModelFilename] = [];

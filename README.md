@@ -51,3 +51,22 @@ The following command line arguments are available
 # Output example
 
 Look for an example in this repo's `examples` directory
+
+
+# Todo
+
+```
+Missing IN Parameter {
+  paramSource: 'formData',
+  swaggerName: 'attachment',
+  name: 'attachment',
+  type: 'any'
+}
+Missing IN Parameter {
+  paramSource: 'formData',
+  swaggerName: 'body',
+  name: 'body',
+  type: 'string'
+}
+ERROR unknown :{"name":"lead_import_file","in":"formData","description":"Lead import file","required":true,"type":"file"}
+```

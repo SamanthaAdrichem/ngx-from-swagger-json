@@ -1,3 +1,4 @@
+import {ComponentsModel} from './swagger/components.model';
 import {DefinitionModel} from './swagger/definition.model';
 import {InfoModel}       from './swagger/info.model';
 import {ParameterModel}  from './swagger/parameter.model';
@@ -10,6 +11,7 @@ export class SwaggerModel {
 	public basePath?: string;
 	public schemes?: string[];
 	public paths?: {[key: string]: PathModel};
+	public components?: ComponentsModel;
 	public definitions?: {[key: string]: DefinitionModel};
 	public parameters?: {[key: string]: ParameterModel};
 	public responses?: {[key: string]: ResponseModel};

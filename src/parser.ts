@@ -55,7 +55,7 @@ export class Parser {
 			console.error('paths missing at: ' + requestUrl);
 		}
 
-		if (!parsedJson.definitions) {
+		if (!parsedJson.definitions && (!parsedJson.components || !parsedJson.components.schemas)) {
 			console.error('definitions missing at: ' + requestUrl);
 			return;
 		}
@@ -107,20 +107,40 @@ export class Parser {
 	}
 
 	private parseParameters(parsedJson: SwaggerModel) {
-		for (const paramName in parsedJson.parameters) {
-			if (!parsedJson.parameters.hasOwnProperty(paramName)) {
-				continue;
+		if (parsedJson.parameters) {
+			for (const paramName in parsedJson.parameters) {
+				if (!parsedJson.parameters.hasOwnProperty(paramName)) {
+					continue;
+				}
+				Storage.addParameter(Parameter.fromSwagger(paramName, parsedJson.parameters[paramName]));
 			}
-			Storage.addParameter(Parameter.fromSwagger(paramName, parsedJson.parameters[paramName]));
+		}
+		if (parsedJson.components && parsedJson.components.parameters) {
+			for (const paramName in parsedJson.components.parameters) {
+				if (!parsedJson.components.parameters.hasOwnProperty(paramName)) {
+					continue;
+				}
+				Storage.addParameter(Parameter.fromSwagger(paramName, parsedJson.components.parameters[paramName]));
+			}
 		}
 	}
 
 	private parseDefinitions(parsedJson: SwaggerModel) {
-		for (const definitionName in parsedJson.definitions) {
-			if (!parsedJson.definitions.hasOwnProperty(definitionName)) {
-				continue;
+		if (parsedJson.definitions) {
+			for (const definitionName in parsedJson.definitions) {
+				if (!parsedJson.definitions.hasOwnProperty(definitionName)) {
+					continue;
+				}
+				Storage.addDefinition(Definition.fromSwagger(definitionName, parsedJson.definitions[definitionName]));
 			}
-			Storage.addDefinition(Definition.fromSwagger(definitionName, parsedJson.definitions[definitionName]));
+		}
+		if (parsedJson.components && parsedJson.components.schemas) {
+			for (const definitionName in parsedJson.components.schemas) {
+				if (!parsedJson.components.schemas.hasOwnProperty(definitionName)) {
+					continue;
+				}
+				Storage.addDefinition(Definition.fromSwagger(definitionName, parsedJson.components.schemas[definitionName]));
+			}
 		}
 	}
 
@@ -178,8 +198,7 @@ export class Parser {
 				providers[serviceName] = serviceName;
 			}
 
-			LibObject.addKeyedValue(imports, serviceFilename, serviceName + (serviceAlias ? ' as ' + serviceAlias : ''));
-
+			LibObject.addKeyedValue(imports, serviceFilename.replace('.ts', ''), serviceName + (serviceAlias ? ' as ' + serviceAlias : ''));
 		}
 
 		let fileContents: string = '';

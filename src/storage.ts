@@ -16,7 +16,10 @@ export class Storage {
 	}
 
 	public static getDefinition(definitionRef: string): Definition|null {
-		return this.definitions[definitionRef.replace('#/definitions/', '')] || null;
+		return this.definitions[
+			definitionRef.replace('#/definitions/', '')
+				.replace('#/components/schemas/', '')
+		] || null;
 	}
 
 	public static addParameter(parameter: Parameter) {
@@ -24,7 +27,10 @@ export class Storage {
 	}
 
 	public static getParameter(paramRef: string): Parameter|null {
-		return this.parameters[paramRef.replace('#/parameters/', '')] || null;
+		return this.parameters[
+			paramRef.replace('#/parameters/', '')
+				.replace('#/components/parameters/', '')
+		] || null;
 	}
 
 	public static addService(service: Service): void {

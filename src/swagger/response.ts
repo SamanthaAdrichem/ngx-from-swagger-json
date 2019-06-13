@@ -1,3 +1,4 @@
+import {SchemaModel}    from 'models/swagger/schema.model';
 import {ResponseModel}  from '../models/swagger/response.model';
 import {SchemaTypeEnum} from '../models/swagger/schema-type.enum';
 import {Storage}        from '../storage';
@@ -12,6 +13,13 @@ export class Response {
 		if (responseModel.schema) {
 			response.setType(responseModel.schema.type === SchemaTypeEnum.array ? FieldTypeEnum.array : FieldTypeEnum.object);
 			response.setRef((responseModel.schema.items && responseModel.schema.items.$ref ? responseModel.schema.items.$ref : responseModel.schema.$ref) || '');
+		}
+		if (responseModel.content && Object.keys(responseModel.content).length > 0) {
+			const schema: SchemaModel = responseModel.content[Object.keys(responseModel.content)[0]].schema;
+			if (schema) {
+				response.setType(schema.type === SchemaTypeEnum.array ? FieldTypeEnum.array : FieldTypeEnum.object);
+				response.setRef((schema.items && schema.items.$ref ? schema.items.$ref : schema.$ref) || '');
+			}
 		}
 		return response;
 	}

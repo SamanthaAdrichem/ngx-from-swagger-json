@@ -93,7 +93,7 @@ export class Method {
 				continue;
 			}
 			fileContents += "" +
-				"\t" + paramName + ": " + parameter.getType() + ";\n";
+				"\t" + paramName + ": " + parameter.getOutputType() + ";\n";
 		}
 
 		fileContents += "" +
@@ -107,6 +107,9 @@ export class Method {
 		if (Object.keys(imports).length > 0) {
 			fileContents = LibFile.generateImportStatements(imports) + fileContents;
 		}
+		fileContents = "" +
+			"// tslint:disable:variable-name\n" +
+			"\n" + fileContents;
 
 		Logger.log('Generated filter model: ' + modelName);
 		LibFile.writeFile(exportDestination + '/' + modelFilename, fileContents, true);

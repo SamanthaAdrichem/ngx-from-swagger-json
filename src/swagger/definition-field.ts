@@ -50,7 +50,7 @@ export class DefinitionField {
 			}
 		}
 
-		if (fieldModel.enum) {
+		if (fieldModel.enum && fieldModel.type !== PropertyTypeEnum.array) {
 			fieldType = 'enum';
 		}
 
@@ -79,7 +79,10 @@ export class DefinitionField {
 				break;
 
 			case 'array':
-				if (fieldModel.items) {
+				if (fieldModel.enum) {
+					this.enumValues = fieldModel.enum;
+					this.parseSubFieldType(fieldModel, fieldModel.items || undefined);
+				} else if (fieldModel.items) {
 					this.parseSubFieldType(fieldModel.items);
 				}
 				this.fieldType = FieldTypeEnum.array;
@@ -98,13 +101,20 @@ export class DefinitionField {
 		}
 	}
 
-	public parseSubFieldType(subFieldType: PropertyModel) {
+	public parseSubFieldType(subFieldType: PropertyModel, altSubFieldType?: PropertyModel) {
 		if (subFieldType.$ref) {
 			this.subFieldRef = subFieldType.$ref;
 			this.subFieldType = FieldTypeEnum.object;
 			return;
 		}
-		switch (subFieldType.type) {
+		if (!subFieldType.type && altSubFieldType && altSubFieldType.$ref) {
+			this.subFieldRef = altSubFieldType.$ref;
+			this.subFieldType = FieldTypeEnum.object;
+			return;
+		}
+
+		const type: PropertyTypeEnum|null = (subFieldType.type !== PropertyTypeEnum.array ? subFieldType.type : null) || (altSubFieldType ? altSubFieldType.type : null) || null;
+		switch (type) {
 			case PropertyTypeEnum.boolean:
 				this.subFieldType = FieldTypeEnum.boolean;
 				break;
