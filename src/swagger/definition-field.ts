@@ -197,8 +197,9 @@ export class DefinitionField {
 
 			let maxEnumLength: number = 0;
 			for (const enumValue of this.enumValues) {
-				let enumLength: number = enumValue.toString().length;
-				if (typeof enumValue !== 'boolean' && (typeof enumValue === 'number' || !isNaN(parseInt(enumValue.substr(0, 1), 10)))) {
+				const safeEnumName = LibString.safeName(enumValue.toString());
+				let enumLength: number = safeEnumName.length;
+				if (typeof enumValue !== 'boolean' && (typeof enumValue === 'number' || !isNaN(parseInt(safeEnumName.substr(0, 1), 10)))) {
 					enumLength += 2;
 				}
 				maxEnumLength = enumLength > maxEnumLength ? enumLength : maxEnumLength;
@@ -215,16 +216,17 @@ export class DefinitionField {
 					continue;
 				}
 
+				const safeEnumName = LibString.safeName(enumValue.toString());
 				if (typeof enumValue === 'number') {
-					enumValues.push(("'" + enumValue.toString() + "'").padEnd(maxEnumLength, ' ') + " = " + enumValue);
+					enumValues.push(("'" + safeEnumName.toString() + "'").padEnd(maxEnumLength, ' ') + " = " + enumValue);
 					continue;
 				}
 
-				if (!isNaN(parseInt(enumValue.substr(0, 1), 10))) {
-					enumValues.push(("'" + enumValue.toString().toUpperCase() + "'").padEnd(maxEnumLength, ' ') + " = '" + enumValue + "'");
+				if (!isNaN(parseInt(safeEnumName.substr(0, 1), 10))) {
+					enumValues.push(("'" + safeEnumName.toString().toUpperCase() + "'").padEnd(maxEnumLength, ' ') + " = '" + enumValue + "'");
 					continue;
 				}
-				enumValues.push(enumValue.toString().toUpperCase().padEnd(maxEnumLength, ' ') + " = '" + enumValue + "'");
+				enumValues.push(safeEnumName.toString().toUpperCase().padEnd(maxEnumLength, ' ') + " = '" + enumValue + "'");
 			}
 
 			const fileContents: string = "" +

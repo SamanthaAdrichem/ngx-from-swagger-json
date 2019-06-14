@@ -3,6 +3,7 @@ import {LibObject}     from '../lib/object';
 import {LibString}     from '../lib/string';
 import {PathModel}     from '../models/swagger/path.model';
 import {Storage}       from '../storage';
+import {MethodEnum}    from '../swagger/method.enum';
 import {FieldTypeEnum} from './field-type.enum';
 import {Method}        from './method';
 import {Parameter}     from './parameter';
@@ -146,7 +147,7 @@ export class Service {
 		if (!serviceName) {
 			return null;
 		}
-		return LibString.upperCamelCaseName(serviceName) + 'Service';
+		return (!isNaN(parseInt(serviceName.substr(0,1), 10)) ? '_' : '') + LibString.upperCamelCaseName(serviceName) + 'Service';
 	}
 
 	public getServiceFilename(): string|null {
@@ -262,7 +263,7 @@ export class Service {
 		let requestParams: string = this.getPathParams();
 		let hasBody: boolean = false;
 		let hasFilter: boolean = false;
-		let apiPath: string = "'" + this.apiPath + "'";
+		let apiPath: string = "'" + (Storage.config.apiBasePath || '') + this.apiPath + "'";
 
 		if (this.idParam && method.isIdAction()) {
 			const idParamName: string = LibString.camelCaseName(this.idParam.getName());
@@ -297,10 +298,10 @@ export class Service {
 
 		const responseModel: string = this.getMethodResponseModel(method, imports);
 		return "" +
-			"\t" + method.name + "(" + requestParams + "): Observable<" + responseModel + "> {\n" +
+			"\t" + method.name + "(" + requestParams.trim() + "): Observable<" + responseModel + "> {\n" +
 			"\t\treturn this.httpClient." + method.apiAction + "<" + responseModel + ">(\n" +
-			"\t\t\t" + apiPath + (hasFilter || hasBody ? ',' : '') + "\n" +
-			(hasBody ? "\t\t\tbody\n" : "") +
+			"\t\t\t" + apiPath + (hasFilter || hasBody || method.name === MethodEnum.create || method.name === MethodEnum.update ? ',' : '') + "\n" +
+			(hasBody ? "\t\t\tbody\n" : (method.name === MethodEnum.create || method.name === MethodEnum.update ? "\t\t\t{}\n" : '')) +
 			(hasFilter ? "\t\t\t{params: new HttpParams(<HttpParamsOptions>{fromObject: filter as {}})}\n" : "") +
 			"\t\t);\n" +
 			"\t}\n" +

@@ -1,6 +1,6 @@
 {
   "name": "@aiwha/ngx-from-swagger-json",
-  "version": "1.0.2",
+  "version": "1.0.11",
   "description": "Generate Angular services from Swagger JSON",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

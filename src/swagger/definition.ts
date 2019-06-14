@@ -45,7 +45,7 @@ export class Definition {
 		if (!this.angularName) {
 			return null;
 		}
-		return this.angularName + 'Model';
+		return (!isNaN(parseInt(this.angularName.substr(0,1), 10)) ? '_' : '') + this.angularName + 'Model';
 	}
 
 	public getModelFilename(): string|null {

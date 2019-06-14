@@ -5,6 +5,7 @@ export class ConfigModel {
 	public ignoreTls: boolean = false;
 	public location: string = '';
 	public moduleName: string|null = null;
+	public apiBasePath: string|null = null;
 	private readonly fallbackDestinationDir: string = '__ngx-from-swagger-json-output';
 
 	constructor(config?: ConfigModel|null) {
