@@ -6,6 +6,8 @@ export class ConfigModel {
 	public location: string = '';
 	public moduleName: string|null = null;
 	public apiBasePath: string|null = null;
+	public filtersAlsoAsArray: boolean = false;
+	public filtersAlsoAsArrayExcludes: string[] = ['page', 'per_page', 'order_by', 'order_direction'];
 	private readonly fallbackDestinationDir: string = '__ngx-from-swagger-json-output';
 
 	constructor(config?: ConfigModel|null) {

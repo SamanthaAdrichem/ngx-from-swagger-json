@@ -104,7 +104,11 @@ export class Parameter {
 	}
 
 	public getOutputType(): string {
-		return this.getType() + (this.array ? '[]' : '');
+		const filterType: FieldTypeEnum = this.getType();
+		if (Storage.config.filtersAlsoAsArray && !this.array && -1 === Storage.config.filtersAlsoAsArrayExcludes.indexOf(this.getName())) {
+			return filterType + '|' + filterType + '[]';
+		}
+		return filterType + (this.array ? '[]' : '');
 	}
 
 	public parseFieldType(fieldModel: ParameterModel) {

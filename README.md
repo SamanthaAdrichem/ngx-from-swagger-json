@@ -19,6 +19,8 @@ Example config:
 		"destinationDir": "services",
 		"apiBasePath": null,
 		"moduleName": null,
+		"filtersAlsoAsArray": false,
+		"filtersAlsoAsArrayExcludes": ['page', 'per_page', 'order_by', 'order_direction'],
 		"flatten": false,
 		"ignoreTls": false
 	}
@@ -33,6 +35,8 @@ The following can be configured:
 | destinationDir | Where to compile them to this is relative from where ngx-from-swagger-json is executed |
 | moduleName | Custom module name e.g. company-data -> CompanyDataModule -> company-data.module.ts |
 | flatten | If all services start with the same root folder, that folder will not be created e.g. destinationDir: /services, all paths start with /api, result with flatten false, /services/api/api.module.ts result with flatten true, /services/api.module.ts |
+| filtersAlsoAsArray | Enable this and all FILTER models will change their type to a duo type array and non-array for example ID can be a number? that would be id: number, now becomes: id: number&#124;number[] |
+| filtersAlsoAsArrayExcludes | Once filtersAlsoAsArray is enabled you can define a list here which will be excluded from the multitype if not defined, it will be 'page', 'per_page', 'order_by', 'order_direction' |
 | ignoreTls | If you want to generate them from a dev environment you can disable Tls verification |
 | apiBasePath | If you need to add something to the path of your api calls you can use this variable for example you can set it to /api, you should not add a trailing slash |
 
