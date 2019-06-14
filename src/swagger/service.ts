@@ -147,7 +147,7 @@ export class Service {
 		if (!serviceName) {
 			return null;
 		}
-		return (!isNaN(parseInt(serviceName.substr(0,1), 10)) ? '_' : '') + LibString.upperCamelCaseName(serviceName) + 'Service';
+		return (!isNaN(parseInt(serviceName.substr(0,1), 10)) ? 'The' : '') + LibString.upperCamelCaseName(serviceName) + 'Service';
 	}
 
 	public getServiceFilename(): string|null {

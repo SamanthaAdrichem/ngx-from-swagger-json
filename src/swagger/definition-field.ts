@@ -197,7 +197,7 @@ export class DefinitionField {
 
 			let maxEnumLength: number = 0;
 			for (const enumValue of this.enumValues) {
-				const safeEnumName = LibString.safeName(enumValue.toString());
+				const safeEnumName = LibString.safeEnumName(enumValue.toString());
 				let enumLength: number = safeEnumName.length;
 				if (typeof enumValue !== 'boolean' && (typeof enumValue === 'number' || !isNaN(parseInt(safeEnumName.substr(0, 1), 10)))) {
 					enumLength += 2;
@@ -207,16 +207,16 @@ export class DefinitionField {
 
 			const enumValues: string[] = [];
 			for (const enumValue of this.enumValues) {
-				if (typeof enumValue === 'boolean') {
+				if (typeof enumValue === 'boolean') { // Should not really be an enum then... but hey..
 					if (enumValue) {
-						enumValues.push("TRUE".padEnd(maxEnumLength, ' ') + " = true");
+						enumValues.push("TRUE".padEnd(maxEnumLength, ' ') + " = 'true'");
 					} else {
-						enumValues.push("FALSE".padEnd(maxEnumLength, ' ') + " = false");
+						enumValues.push("FALSE".padEnd(maxEnumLength, ' ') + " = 'false'");
 					}
 					continue;
 				}
 
-				const safeEnumName = LibString.safeName(enumValue.toString());
+				const safeEnumName = LibString.safeEnumName(enumValue.toString());
 				if (typeof enumValue === 'number') {
 					enumValues.push(("'" + safeEnumName.toString() + "'").padEnd(maxEnumLength, ' ') + " = " + enumValue);
 					continue;
